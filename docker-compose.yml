@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  quran-bot:
+    build: .
+    container_name: quran-whatsapp-bot
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    volumes:
+      - ./quran-images:/app/quran-images
+      - ./.wwebjs_auth:/app/.wwebjs_auth
+      - ./.wwebjs_cache:/app/.wwebjs_cache
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: quran-bot-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=quran_user
+      - POSTGRES_PASSWORD=quran_password
+      - POSTGRES_DB=quran_bot
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

@@ -35,6 +35,48 @@ npm install
 DATABASE_URL=postgresql://username:password@host:port/database
 ```
 
+## Docker Deployment (Recommended)
+
+### Using Docker Compose (Easiest)
+
+1. Clone and navigate to the project:
+```bash
+git clone https://github.com/XredaX/Quran-Whatsapp-bot.git
+cd Quran-Whatsapp-bot
+```
+
+2. Update `.env` file (docker-compose includes PostgreSQL):
+```env
+DATABASE_URL=postgresql://quran_user:quran_password@postgres:5432/quran_bot
+```
+
+3. Start the bot and database:
+```bash
+docker-compose up -d
+```
+
+4. View logs to scan QR code:
+```bash
+docker-compose logs -f quran-bot
+```
+
+5. Stop the bot:
+```bash
+docker-compose down
+```
+
+### Using Docker Only
+
+Build and run:
+```bash
+docker build -t quran-bot .
+docker run -d --name quran-bot \
+  -e DATABASE_URL="your_database_url" \
+  -v $(pwd)/quran-images:/app/quran-images \
+  -v $(pwd)/.wwebjs_auth:/app/.wwebjs_auth \
+  quran-bot
+```
+
 ## Usage
 
 1. Start the bot:
