@@ -291,20 +291,35 @@ async function handleAddScheduleInput(msg, schedule) {
     const lang = await getUserLang(userId);
     const state = userStates[userId];
 
-    const cron = timeToCron(schedule);
+    try {
+        const cron = timeToCron(schedule);
 
-    if (!cron) {
-        await msg.reply(t(lang, 'invalidTime'));
-        return;
+        if (!cron) {
+            await msg.reply(t(lang, 'invalidTime'));
+            return;
+        }
+
+        if (!state || !state.group) {
+            console.error('State or group missing for user:', userId);
+            await msg.reply(t(lang, 'sessionExpired'));
+            delete userStates[userId];
+            return;
+        }
+
+        console.log(`Adding schedule ${schedule} (cron: ${cron}) for group ${state.group.name}`);
+
+        const currentSchedules = JSON.parse(state.group.cron_schedules || '["0 18 * * *"]');
+        currentSchedules.push(cron);
+
+        await updateGroupConfig(state.group.group_id, { cron_schedules: currentSchedules });
+        await reloadJobs();
+        await msg.reply(t(lang, 'scheduleAdded', state.group.name, currentSchedules.length));
+        delete userStates[userId];
+    } catch (error) {
+        console.error('Error adding schedule:', error);
+        await msg.reply(t(lang, 'error'));
+        delete userStates[userId];
     }
-
-    const currentSchedules = JSON.parse(state.group.cron_schedules || '["0 18 * * *"]');
-    currentSchedules.push(cron);
-
-    await updateGroupConfig(state.group.group_id, { cron_schedules: currentSchedules });
-    await reloadJobs();
-    await msg.reply(t(lang, 'scheduleAdded', state.group.name, currentSchedules.length));
-    delete userStates[userId];
 }
 
 async function handleRemoveSchedule(msg) {
