@@ -1,6 +1,21 @@
-# Quran WhatsApp Bot
-
-A multi-user WhatsApp bot that sends daily Quran pages to groups with multi-language support (English, French, Arabic).
+<div align="center">
+  <img src="assets/logo.png" alt="Quran WhatsApp Bot Logo" width="200"/>
+  
+  # Quran WhatsApp Bot
+  
+  A multi-user WhatsApp bot that sends daily Quran pages to groups with multi-language support (English, French, Arabic).
+  
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Node.js](https://img.shields.io/badge/Node.js-14+-green.svg)](https://nodejs.org/)
+  [![WhatsApp](https://img.shields.io/badge/WhatsApp-Bot-25D366?logo=whatsapp)](https://github.com/XredaX/Quran-Whatsapp-bot)
+  
+  ### 📱 Try the Bot Now!
+  
+  **WhatsApp:** +212 698-032924
+  
+  [![Chat on WhatsApp](https://img.shields.io/badge/Chat%20on-WhatsApp-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://wa.me/212698032924)
+  
+</div>
 
 ## Features
 
