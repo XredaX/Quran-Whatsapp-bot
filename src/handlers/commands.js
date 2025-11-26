@@ -1,6 +1,10 @@
-const { getOrCreateUser, getUserGroups, linkGroup, updateGroupConfig, getGroup, getUser, updateUserLanguage } = require('../config/database');
+const { getOrCreateUser, getUserGroups, linkGroup, updateGroupConfig, getGroup, getUser, updateUserLanguage, deleteGroup } = require('../config/database');
 const { reloadJobs } = require('../services/scheduler');
 const { t } = require('../utils/translations');
+const { getUserAccessibleGroups, isUserInGroup } = require('../utils/groupSecurity');
+const { addNavigationFooter } = require('../utils/messageFormatter');
+const { generatePreview, generateWizardPreview } = require('../utils/confirmations');
+const { startGroupWizard, generateWizardStepMessage, processWizardInput } = require('../utils/wizards');
 
 const userStates = {};
 
@@ -33,15 +37,79 @@ function cronToTime(cron) {
     return `${hour}:${minute}`;
 }
 
+async function handleMessage(msg, client) {
+    const userId = msg.from;
+    const messageText = msg.body.trim();
+    const lowerText = messageText.toLowerCase();
+
+    const state = userStates[userId];
+
+    if (lowerText === '!language') {
+        await handleLanguageSelection(msg);
+        return;
+    }
+
+    if (!state && (lowerText === 'menu' || lowerText === 'help' || lowerText === 'start')) {
+        await handleMenu(msg);
+        return;
+    }
+
+    if (!state) {
+        const user = await getUser(userId);
+        if (!user) {
+            await handleLanguageSelection(msg);
+        } else {
+            await handleMenu(msg);
+        }
+        return;
+    }
+    if (state.command === 'select_language' && state.step === 'selecting') {
+        await processLanguageSelection(msg, messageText);
+    } else if (state.command === 'main_menu' && state.step === 'selecting') {
+        await handleMenuSelection(msg, messageText, client);
+    } else if (state.command === 'link' && state.step === 'selecting') {
+        await handleLinkGroupSelection(msg, client, messageText);
+    } else if (state.command === 'wizard') {
+        await handleWizardStep(msg, client, messageText);
+    } else if (state.command === 'wizard_confirm') {
+        await handleWizardConfirmation(msg, client, messageText);
+    } else if (state.command === 'edit_confirm') {
+        await handleEditConfirmation(msg, messageText);
+    } else if (state.command === 'mygroups' && state.step === 'selecting') {
+        await handleGroupSelection(msg, messageText);
+    } else if (state.command === 'settings' && state.step === 'configuring') {
+        await handleSettingsOption(msg, messageText);
+    } else if (state.command === 'settings' && state.step === 'waiting_page') {
+        await handlePageInput(msg, messageText);
+    } else if (state.command === 'settings' && state.step === 'waiting_add_schedule') {
+        await handleAddScheduleInput(msg, messageText);
+    } else if (state.command === 'settings' && state.step === 'waiting_remove_schedule') {
+        await handleRemoveScheduleSelection(msg, messageText);
+    } else if (state.command === 'settings' && state.step === 'waiting_pages_per_send') {
+        await handlePagesPerSendInput(msg, messageText);
+    } else if (state.command === 'settings' && state.step === 'confirm_delete') {
+        await handleDeleteConfirmation(msg, messageText);
+    } else {
+        await handleMenu(msg);
+    }
+}
+
 async function handleLanguageSelection(msg) {
     const userId = msg.from;
 
     userStates[userId] = { command: 'select_language', step: 'selecting' };
-    await msg.reply(t('en', 'selectLanguage'));
+    await msg.reply(addNavigationFooter(t('en', 'selectLanguage'), 'en'));
 }
 
 async function processLanguageSelection(msg, selection) {
     const userId = msg.from;
+
+    const lowerSelection = selection.toLowerCase().trim();
+    if (lowerSelection === 'menu' || lowerSelection === 'cancel' || lowerSelection === 'back') {
+        delete userStates[userId];
+        await handleMenu(msg);
+        return;
+    }
 
     const langMap = { '1': 'en', '2': 'fr', '3': 'ar' };
     const selectedLang = langMap[selection];
@@ -65,79 +133,147 @@ async function handleMenu(msg) {
     const userId = msg.from;
     const lang = await getUserLang(userId);
 
-    await msg.reply(t(lang, 'menu'));
+    await msg.reply(addNavigationFooter(t(lang, 'menu'), lang));
 
     userStates[userId] = { command: 'main_menu', step: 'selecting' };
 }
 
-async function handleMenuSelection(msg, selection) {
+async function handleMenuSelection(msg, selection, client) {
     const userId = msg.from;
     const lang = await getUserLang(userId);
 
+    const lowerSelection = selection.toLowerCase().trim();
+    if (lowerSelection === 'menu' || lowerSelection === 'help' || lowerSelection === 'start') {
+        await handleMenu(msg);
+        return;
+    }
+
     switch (selection) {
         case '1':
-            await handleLink(msg);
+            await handleLink(msg, client);
             break;
         case '2':
             await handleMyGroups(msg);
             break;
         case '3':
-            await msg.reply(t(lang, 'help'));
+            await msg.reply(addNavigationFooter(t(lang, 'help'), lang));
             delete userStates[userId];
             break;
         case '4':
             await handleLanguageSelection(msg);
             break;
         default:
-            await msg.reply(t(lang, 'invalidOption', 4));
+            await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 4), lang));
     }
 }
 
-async function handleLink(msg) {
+async function handleLink(msg, client) {
     const userId = msg.from;
     const lang = await getUserLang(userId);
     await getOrCreateUser(userId);
 
-    userStates[userId] = { command: 'link', step: 'waiting_name' };
+    const userGroups = await getUserAccessibleGroups(client, userId);
 
-    await msg.reply(t(lang, 'linkGroup'));
+    if (userGroups.length === 0) {
+        await msg.reply(addNavigationFooter(t(lang, 'noGroupsAvailable'), lang));
+        delete userStates[userId];
+        return;
+    }
+
+    const linkedGroups = await getUserGroups(userId);
+    const linkedIds = linkedGroups.map(g => g.group_id);
+
+    let responseText = t(lang, 'selectGroupToLink', userGroups.length) + '\n\n';
+
+    userGroups.forEach((group, index) => {
+        const isLinked = linkedIds.includes(group.id);
+        const status = isLinked ? '✅' : '⚪';
+        responseText += `${status} *${index + 1}.* ${group.name}\n`;
+        responseText += `   👥 ${group.participantCount} members\n\n`;
+    });
+
+    responseText += '\n' + t(lang, 'linkInstructions', userGroups.length);
+
+    userStates[userId] = {
+        command: 'link',
+        step: 'selecting',
+        availableGroups: userGroups
+    };
+
+    await msg.reply(addNavigationFooter(responseText, lang));
 }
 
-async function handleLinkGroupName(msg, client, groupName) {
+async function handleLinkGroupSelection(msg, client, selection) {
     const userId = msg.from;
     const lang = await getUserLang(userId);
+    const state = userStates[userId];
 
-    const lowerName = groupName.toLowerCase().trim();
-    if (lowerName === 'menu' || lowerName === 'help' || lowerName === 'cancel' || lowerName === 'back') {
+    const lowerSelection = selection.toLowerCase().trim();
+    if (lowerSelection === 'menu' || lowerSelection === 'cancel' || lowerSelection === 'back') {
         delete userStates[userId];
         await handleMenu(msg);
         return;
     }
 
-    try {
-        const chats = await client.getChats();
-        const groups = chats.filter(chat => chat.isGroup);
-        const targetGroup = groups.find(g => g.name.toLowerCase() === groupName.toLowerCase());
+    const groupIndex = parseInt(selection) - 1;
 
-        if (!targetGroup) {
-            await msg.reply(t(lang, 'groupNotFound', groupName));
+    if (isNaN(groupIndex) || groupIndex < 0 || groupIndex >= state.availableGroups.length) {
+        const matchingGroups = state.availableGroups.filter(g =>
+            g.name.toLowerCase().includes(selection.toLowerCase())
+        );
+
+        if (matchingGroups.length === 0) {
+            await msg.reply(addNavigationFooter(t(lang, 'invalidGroupSelection', state.availableGroups.length), lang));
             return;
         }
 
-        const result = await linkGroup(userId, targetGroup.id._serialized, targetGroup.name);
-
-        if (result.success) {
-            await msg.reply(t(lang, 'groupLinked', targetGroup.name));
-            await reloadJobs();
-            delete userStates[userId];
-        } else {
-            await msg.reply(t(lang, 'alreadyLinked'));
-            delete userStates[userId];
+        if (matchingGroups.length === 1) {
+            await linkSelectedGroup(msg, client, matchingGroups[0], userId, lang);
+            return;
         }
+
+        let responseText = t(lang, 'multipleGroupsFound', selection, matchingGroups.length) + '\n\n';
+        matchingGroups.forEach((group, index) => {
+            responseText += `*${index + 1}.* ${group.name}\n`;
+            responseText += `   👥 ${group.participantCount} members\n\n`;
+        });
+        responseText += t(lang, 'selectFromMatches', matchingGroups.length);
+
+        userStates[userId].availableGroups = matchingGroups;
+        await msg.reply(responseText);
+        return;
+    }
+
+    const selectedGroup = state.availableGroups[groupIndex];
+    await linkSelectedGroup(msg, client, selectedGroup, userId, lang);
+}
+
+async function linkSelectedGroup(msg, client, group, userId, lang) {
+    try {
+        const isInGroup = await isUserInGroup(client, group.id, userId);
+
+        if (!isInGroup) {
+            await msg.reply(addNavigationFooter(t(lang, 'notMemberOfGroup', group.name), lang));
+            delete userStates[userId];
+            return;
+        }
+
+        const linkedGroups = await getUserGroups(userId);
+        const alreadyLinked = linkedGroups.some(g => g.group_id === group.id);
+
+        if (alreadyLinked) {
+            await msg.reply(addNavigationFooter(t(lang, 'alreadyLinked'), lang));
+            delete userStates[userId];
+            return;
+        }
+
+        const wizard = startGroupWizard(group.id, group.name, lang);
+        userStates[userId] = wizard.state;
+        await msg.reply(wizard.message);
 
     } catch (error) {
         console.error('Error linking group:', error);
-        await msg.reply(t(lang, 'error'));
+        await msg.reply(addNavigationFooter(t(lang, 'error'), lang));
         delete userStates[userId];
     }
 }
@@ -150,7 +286,7 @@ async function handleMyGroups(msg) {
     const groups = await getUserGroups(userId);
 
     if (groups.length === 0) {
-        await msg.reply(t(lang, 'noGroups'));
+        await msg.reply(addNavigationFooter(t(lang, 'noGroups'), lang));
         delete userStates[userId];
         return;
     }
@@ -173,7 +309,7 @@ async function handleMyGroups(msg) {
         groups: groups
     };
 
-    await msg.reply(responseText);
+    await msg.reply(addNavigationFooter(responseText, lang));
 }
 
 async function handleGroupSelection(msg, selection) {
@@ -181,10 +317,17 @@ async function handleGroupSelection(msg, selection) {
     const lang = await getUserLang(userId);
     const state = userStates[userId];
 
+    const lowerSelection = selection.toLowerCase().trim();
+    if (lowerSelection === 'menu' || lowerSelection === 'cancel' || lowerSelection === 'back' || lowerSelection === 'home') {
+        delete userStates[userId];
+        await handleMenu(msg);
+        return;
+    }
+
     const groupIndex = parseInt(selection) - 1;
 
     if (isNaN(groupIndex) || groupIndex < 0 || groupIndex >= state.groups.length) {
-        await msg.reply(t(lang, 'invalidSelection'));
+        await msg.reply(addNavigationFooter(t(lang, 'invalidSelection'), lang));
         return;
     }
 
@@ -199,7 +342,7 @@ async function handleSettings(msg, groupId) {
 
     const group = await getGroup(groupId);
     if (!group) {
-        await msg.reply(t(lang, 'error'));
+        await msg.reply(addNavigationFooter(t(lang, 'error'), lang));
         delete userStates[userId];
         return;
     }
@@ -211,19 +354,23 @@ async function handleSettings(msg, groupId) {
     };
 
     const schedules = JSON.parse(group.cron_schedules || '["0 18 * * *"]');
+    const pagesPerSend = group.pages_per_send || 1;
 
     let schedulesList = '';
     schedules.forEach((s, i) => {
         schedulesList += `   ${i + 1}. ${cronToTime(s)}\n`;
     });
 
+    const statusText = group.is_active ? '✅ Active' : '❌ Paused';
+
     const configText = t(lang, 'configure', group.name) +
         t(lang, 'currentPage', group.current_page) +
+        t(lang, 'pagesPerSend', pagesPerSend) +
         t(lang, 'schedules', schedules.length) + schedulesList +
-        t(lang, 'status', group.is_active) +
+        t(lang, 'status', statusText) +
         t(lang, 'whatToChange');
 
-    await msg.reply(configText);
+    await msg.reply(addNavigationFooter(configText, lang));
 }
 
 async function handleSettingsOption(msg, option) {
@@ -232,20 +379,32 @@ async function handleSettingsOption(msg, option) {
     const state = userStates[userId];
 
     if (!state || !state.group) {
-        await msg.reply(t(lang, 'sessionExpired'));
+        await msg.reply(addNavigationFooter(t(lang, 'sessionExpired'), lang));
         delete userStates[userId];
+        return;
+    }
+
+    const lowerOption = option.toLowerCase().trim();
+    if (lowerOption === 'menu' || lowerOption === 'cancel' || lowerOption === 'home') {
+        delete userStates[userId];
+        await handleMenu(msg);
+        return;
+    }
+    if (lowerOption === 'back') {
+        delete userStates[userId];
+        await handleMyGroups(msg);
         return;
     }
 
     switch (option) {
         case '1':
             userStates[userId].step = 'waiting_page';
-            await msg.reply(t(lang, 'setPage'));
+            await msg.reply(addNavigationFooter(t(lang, 'setPage'), lang));
             break;
 
         case '2':
             userStates[userId].step = 'waiting_add_schedule';
-            await msg.reply(t(lang, 'addSchedule'));
+            await msg.reply(addNavigationFooter(t(lang, 'addSchedule'), lang));
             break;
 
         case '3':
@@ -253,19 +412,26 @@ async function handleSettingsOption(msg, option) {
             break;
 
         case '4':
-            const newStatus = !state.group.is_active;
-            await updateGroupConfig(state.group.group_id, { is_active: newStatus });
-            await reloadJobs();
-            await msg.reply(newStatus ? t(lang, 'resumed', state.group.name) : t(lang, 'paused', state.group.name));
-            delete userStates[userId];
+            userStates[userId].step = 'waiting_pages_per_send';
+            await msg.reply(addNavigationFooter(t(lang, 'setPagesPerSend'), lang));
             break;
 
         case '5':
+            await handleToggleStatus(msg);
+            break;
+
+        case '6':
+            userStates[userId].step = 'confirm_delete';
+            await msg.reply(addNavigationFooter(t(lang, 'confirmDelete', state.group.name), lang));
+            break;
+
+        case '7':
+            delete userStates[userId];
             await handleMyGroups(msg);
             break;
 
         default:
-            await msg.reply(t(lang, 'invalidOption', 5));
+            await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 7), lang));
     }
 }
 
@@ -274,16 +440,45 @@ async function handlePageInput(msg, pageNumber) {
     const lang = await getUserLang(userId);
     const state = userStates[userId];
 
-    const page = parseInt(pageNumber);
-
-    if (isNaN(page) || page < 1 || page > 604) {
-        await msg.reply(t(lang, 'invalidPage'));
+    const lowerInput = pageNumber.toLowerCase().trim();
+    if (lowerInput === 'menu' || lowerInput === 'cancel' || lowerInput === 'back') {
+        delete userStates[userId];
+        await handleSettings(msg, state.group.group_id);
         return;
     }
 
-    await updateGroupConfig(state.group.group_id, { current_page: page });
-    await msg.reply(t(lang, 'pageUpdated', state.group.name, page));
-    delete userStates[userId];
+    const page = parseInt(pageNumber);
+
+    if (isNaN(page) || page < 1 || page > 604) {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidPage'), lang));
+        return;
+    }
+
+    const group = state.group;
+    const schedules = JSON.parse(group.cron_schedules || '["0 18 * * *"]');
+    const preview = generatePreview({
+        lang,
+        groupName: group.name,
+        field: 'current_page',
+        oldValue: group.current_page,
+        newValue: page,
+        currentPage: page,
+        pagesPerSend: group.pages_per_send || 1,
+        schedules
+    });
+
+    userStates[userId] = {
+        command: 'edit_confirm',
+        step: 'confirming',
+        editData: {
+            groupId: group.group_id,
+            field: 'current_page',
+            oldValue: group.current_page,
+            newValue: page
+        }
+    };
+
+    await msg.reply(addNavigationFooter(preview, lang));
 }
 
 async function handleAddScheduleInput(msg, schedule) {
@@ -291,17 +486,24 @@ async function handleAddScheduleInput(msg, schedule) {
     const lang = await getUserLang(userId);
     const state = userStates[userId];
 
+    const lowerInput = schedule.toLowerCase().trim();
+    if (lowerInput === 'menu' || lowerInput === 'cancel' || lowerInput === 'back') {
+        delete userStates[userId];
+        await handleSettings(msg, state.group.group_id);
+        return;
+    }
+
     try {
         const cron = timeToCron(schedule);
 
         if (!cron) {
-            await msg.reply(t(lang, 'invalidTime'));
+            await msg.reply(addNavigationFooter(t(lang, 'invalidTime'), lang));
             return;
         }
 
         if (!state || !state.group) {
             console.error('State or group missing for user:', userId);
-            await msg.reply(t(lang, 'sessionExpired'));
+            await msg.reply(addNavigationFooter(t(lang, 'sessionExpired'), lang));
             delete userStates[userId];
             return;
         }
@@ -313,11 +515,11 @@ async function handleAddScheduleInput(msg, schedule) {
 
         await updateGroupConfig(state.group.group_id, { cron_schedules: currentSchedules });
         await reloadJobs();
-        await msg.reply(t(lang, 'scheduleAdded', state.group.name, currentSchedules.length));
+        await msg.reply(addNavigationFooter(t(lang, 'scheduleAdded', state.group.name, currentSchedules.length), lang));
         delete userStates[userId];
     } catch (error) {
         console.error('Error adding schedule:', error);
-        await msg.reply(t(lang, 'error'));
+        await msg.reply(addNavigationFooter(t(lang, 'error'), lang));
         delete userStates[userId];
     }
 }
@@ -330,18 +532,17 @@ async function handleRemoveSchedule(msg) {
     const schedules = JSON.parse(state.group.cron_schedules || '["0 18 * * *"]');
 
     if (schedules.length === 0) {
-        await msg.reply(t(lang, 'noSchedules'));
+        await msg.reply(addNavigationFooter(t(lang, 'noSchedules'), lang));
         return;
     }
 
-    let schedulesList = t(lang, 'selectToRemove');
+    let schedulesList = '';
     schedules.forEach((s, i) => {
         schedulesList += `${i + 1}. ${cronToTime(s)}\n`;
     });
-    schedulesList += '\n_Reply with the number_';
 
     userStates[userId].step = 'waiting_remove_schedule';
-    await msg.reply(schedulesList);
+    await msg.reply(addNavigationFooter(t(lang, 'selectScheduleToRemove', schedulesList), lang));
 }
 
 async function handleRemoveScheduleSelection(msg, selection) {
@@ -349,101 +550,228 @@ async function handleRemoveScheduleSelection(msg, selection) {
     const lang = await getUserLang(userId);
     const state = userStates[userId];
 
-    const schedules = JSON.parse(state.group.cron_schedules || '["0 18 * * *"]');
-    const scheduleIndex = parseInt(selection) - 1;
-
-    if (isNaN(scheduleIndex) || scheduleIndex < 0 || scheduleIndex >= schedules.length) {
-        await msg.reply(t(lang, 'invalidSelection'));
+    const lowerSelection = selection.toLowerCase().trim();
+    if (lowerSelection === 'menu' || lowerSelection === 'cancel' || lowerSelection === 'back') {
+        delete userStates[userId];
+        await handleSettings(msg, state.group.group_id);
         return;
     }
 
-    const removedSchedule = schedules.splice(scheduleIndex, 1)[0];
+    const scheduleIndex = parseInt(selection) - 1;
+    const schedules = JSON.parse(state.group.cron_schedules || '["0 18 * * *"]');
 
-    // If no schedules left, pause the group
-    let isActive = state.group.is_active;
-    let message = t(lang, 'scheduleRemoved', cronToTime(removedSchedule));
-
-    if (schedules.length === 0) {
-        isActive = false;
-        message += '\n\n' + t(lang, 'autoPaused');
+    if (isNaN(scheduleIndex) || scheduleIndex < 0 || scheduleIndex >= schedules.length) {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidSelection'), lang));
+        return;
     }
 
-    await updateGroupConfig(state.group.group_id, {
-        cron_schedules: schedules,
-        is_active: isActive
-    });
+    schedules.splice(scheduleIndex, 1);
 
+    await updateGroupConfig(state.group.group_id, { cron_schedules: schedules });
     await reloadJobs();
-    await msg.reply(message);
+    await msg.reply(addNavigationFooter(t(lang, 'scheduleRemoved', state.group.name), lang));
     delete userStates[userId];
 }
 
-async function handleMessage(msg, client) {
+async function handleToggleStatus(msg) {
     const userId = msg.from;
-    const text = msg.body.trim().toLowerCase();
+    const lang = await getUserLang(userId);
+    const state = userStates[userId];
 
-    if (userStates[userId]) {
-        const state = userStates[userId];
+    const newStatus = !state.group.is_active;
+    await updateGroupConfig(state.group.group_id, { is_active: newStatus });
+    await reloadJobs();
 
-        if (state.command === 'select_language' && state.step === 'selecting') {
-            await processLanguageSelection(msg, text);
-            return true;
-        }
+    const statusText = newStatus ? '✅ Active' : '❌ Paused';
+    await msg.reply(addNavigationFooter(t(lang, 'statusToggled', state.group.name, statusText), lang));
+    delete userStates[userId];
+}
 
-        if (state.command === 'main_menu' && state.step === 'selecting') {
-            await handleMenuSelection(msg, text);
-            return true;
-        }
+async function handlePagesPerSendInput(msg, pagesCount) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    const state = userStates[userId];
 
-        if (state.command === 'link' && state.step === 'waiting_name') {
-            await handleLinkGroupName(msg, client, msg.body.trim());
-            return true;
-        }
-
-        if (state.command === 'mygroups' && state.step === 'selecting') {
-            await handleGroupSelection(msg, text);
-            return true;
-        }
-
-        if (state.command === 'settings' && state.step === 'configuring') {
-            await handleSettingsOption(msg, text);
-            return true;
-        }
-
-        if (state.command === 'settings' && state.step === 'waiting_page') {
-            await handlePageInput(msg, text);
-            return true;
-        }
-
-        if (state.command === 'settings' && state.step === 'waiting_add_schedule') {
-            await handleAddScheduleInput(msg, text);
-            return true;
-        }
-
-        if (state.command === 'settings' && state.step === 'waiting_remove_schedule') {
-            await handleRemoveScheduleSelection(msg, text);
-            return true;
-        }
+    const lowerInput = pagesCount.toLowerCase().trim();
+    if (lowerInput === 'menu' || lowerInput === 'cancel' || lowerInput === 'back') {
+        delete userStates[userId];
+        await handleSettings(msg, state.group.group_id);
+        return;
     }
 
-    if (text === 'menu' || text === '!menu' || text === 'help' || text === '!help' || text === 'start' || text === '!start') {
+    const pages = parseInt(pagesCount);
+
+    if (isNaN(pages) || pages < 1 || pages > 50) {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidPagesPerSend'), lang));
+        return;
+    }
+
+    const group = state.group;
+    const schedules = JSON.parse(group.cron_schedules || '["0 18 * * *"]');
+    const preview = generatePreview({
+        lang,
+        groupName: group.name,
+        field: 'pages_per_send',
+        oldValue: group.pages_per_send || 1,
+        newValue: pages,
+        currentPage: group.current_page,
+        pagesPerSend: pages,
+        schedules
+    });
+
+    userStates[userId] = {
+        command: 'edit_confirm',
+        step: 'confirming',
+        editData: {
+            groupId: group.group_id,
+            field: 'pages_per_send',
+            oldValue: group.pages_per_send || 1,
+            newValue: pages
+        }
+    };
+
+    await msg.reply(addNavigationFooter(preview, lang));
+}
+
+async function handleDeleteConfirmation(msg, response) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    const state = userStates[userId];
+
+    const trimmed = response.trim();
+
+    if (trimmed === '1') {
+        await deleteGroup(state.group.group_id);
+        await reloadJobs();
+        await msg.reply(addNavigationFooter(t(lang, 'groupDeleted', state.group.name), lang));
+        delete userStates[userId];
+    } else if (trimmed === '2') {
+        await msg.reply(addNavigationFooter(t(lang, 'deleteCancelled'), lang));
+        delete userStates[userId];
+    } else {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 2), lang));
+    }
+}
+
+async function handleWizardStep(msg, client, input) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    const state = userStates[userId];
+
+    const lowerInput = input.toLowerCase().trim();
+    if (lowerInput === 'menu' || lowerInput === 'cancel') {
+        delete userStates[userId];
         await handleMenu(msg);
-        return true;
+        return;
     }
 
-    if (text === 'language' || text === '!language' || text === 'lang' || text === '!lang') {
-        await handleLanguageSelection(msg);
-        return true;
+    const result = processWizardInput(state.step, input, state.wizardData);
+
+    if (!result.valid) {
+        await msg.reply(addNavigationFooter(t(lang, result.error), lang));
+        return;
     }
 
-    const user = await getUser(userId);
-    if (!user) {
-        await handleLanguageSelection(msg);
-        return true;
-    }
+    userStates[userId].wizardData = result.updatedData;
 
-    await handleMenu(msg);
-    return true;
+    if (result.nextStep === 'preview') {
+        const preview = generateWizardPreview(result.updatedData, lang);
+        userStates[userId] = {
+            command: 'wizard_confirm',
+            step: 'confirming',
+            wizardData: result.updatedData
+        };
+        await msg.reply(addNavigationFooter(preview, lang));
+    } else {
+        userStates[userId].step = result.nextStep;
+        const nextMessage = generateWizardStepMessage(result.nextStep, result.updatedData, lang);
+        await msg.reply(nextMessage);
+    }
+}
+
+async function handleWizardConfirmation(msg, client, response) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    const state = userStates[userId];
+
+    const trimmed = response.trim();
+
+    if (trimmed === '1') {
+        const { groupId, groupName, currentPage, pagesPerSend, schedules, isActive } = state.wizardData;
+
+        try {
+            const result = await linkGroup(userId, groupId, groupName);
+
+            if (result.success) {
+                await updateGroupConfig(groupId, {
+                    current_page: currentPage,
+                    pages_per_send: pagesPerSend,
+                    cron_schedules: schedules,
+                    is_active: isActive
+                });
+
+                await reloadJobs();
+                await msg.reply(addNavigationFooter(t(lang, 'groupLinked', groupName), lang));
+                delete userStates[userId];
+            } else {
+                await msg.reply(addNavigationFooter(t(lang, 'alreadyLinked'), lang));
+                delete userStates[userId];
+            }
+        } catch (error) {
+            console.error('Error saving wizard configuration:', error);
+            await msg.reply(addNavigationFooter(t(lang, 'error'), lang));
+            delete userStates[userId];
+        }
+    } else if (trimmed === '3') {
+        const wizard = startGroupWizard(state.wizardData.groupId, state.wizardData.groupName, lang);
+        userStates[userId] = wizard.state;
+        await msg.reply(wizard.message);
+    } else if (trimmed === '2') {
+        await msg.reply(addNavigationFooter(t(lang, 'deleteCancelled'), lang));
+        delete userStates[userId];
+    } else {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 3), lang));
+    }
+}
+
+async function handleEditConfirmation(msg, input) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    const state = userStates[userId];
+
+    const trimmed = input.trim();
+
+    if (trimmed === '1') {
+        const { groupId, field, newValue } = state.editData;
+
+        try {
+            const update = {};
+            update[field] = newValue;
+            await updateGroupConfig(groupId, update);
+            await reloadJobs();
+
+            const group = await getGroup(groupId);
+            
+            const updateKeyMap = {
+                'current_page': 'pageUpdated',
+                'pages_per_send': 'pagesPerSendUpdated',
+                'is_active': 'statusToggled'
+            };
+            
+            const translationKey = updateKeyMap[field] || 'pageUpdated';
+            await msg.reply(addNavigationFooter(t(lang, translationKey, group.name, newValue), lang));
+            delete userStates[userId];
+        } catch (error) {
+            console.error('Error applying edit:', error);
+            await msg.reply(addNavigationFooter(t(lang, 'error'), lang));
+            delete userStates[userId];
+        }
+    } else if (trimmed === '2') {
+        await msg.reply(addNavigationFooter(t(lang, 'deleteCancelled'), lang));
+        delete userStates[userId];
+    } else {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 2), lang));
+    }
 }
 
 module.exports = {

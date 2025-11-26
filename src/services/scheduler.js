@@ -62,29 +62,52 @@ function scheduleGroup(group) {
 }
 
 async function sendQuranImage(group) {
-    const imagePath = path.join(process.cwd(), IMAGES_DIR, `${group.current_page}.jpg`);
-
-    console.log(`Attempting to send page ${group.current_page} to ${group.name}...`);
-
-    if (!fs.existsSync(imagePath)) {
-        console.error(`Error: Image not found at ${imagePath}`);
-        return;
-    }
+    const pagesPerSend = group.pages_per_send || 1;
+    const maxPage = 604;
+    
+    console.log(`Attempting to send ${pagesPerSend} page(s) starting from page ${group.current_page} to ${group.name}...`);
 
     try {
-        const media = MessageMedia.fromFilePath(imagePath);
-        const quote = getRandomQuote();
-        const caption = `📖 *Page ${group.current_page}*\n\n${quote}`;
+        let pagesSent = 0;
+        let currentPage = group.current_page;
 
-        await client.sendMessage(group.group_id, media, {
-            caption: caption
-        });
+        for (let i = 0; i < pagesPerSend; i++) {
+            // Check if we've reached the end of the Quran
+            if (currentPage > maxPage) {
+                console.log(`Reached end of Quran for ${group.name}. Stopping at page ${maxPage}.`);
+                break;
+            }
 
-        console.log(`✅ Sent page ${group.current_page} to ${group.name} at ${new Date().toLocaleString()}`);
+            const imagePath = path.join(process.cwd(), IMAGES_DIR, `${currentPage}.jpg`);
 
-        const nextPage = group.current_page + 1;
-        await updateGroupConfig(group.group_id, { current_page: nextPage });
-        console.log(`Updated ${group.name} to page ${nextPage}`);
+            if (!fs.existsSync(imagePath)) {
+                console.error(`Error: Image not found at ${imagePath}`);
+                break;
+            }
+
+            const media = MessageMedia.fromFilePath(imagePath);
+            const quote = getRandomQuote();
+            const caption = `📖 *Page ${currentPage}*\n\n${quote}`;
+
+            await client.sendMessage(group.group_id, media, {
+                caption: caption
+            });
+
+            console.log(`✅ Sent page ${currentPage} to ${group.name}`);
+            pagesSent++;
+            currentPage++;
+
+            // Add a small delay between messages to avoid rate limiting
+            if (i < pagesPerSend - 1) {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
+
+        console.log(`✅ Completed sending ${pagesSent} page(s) to ${group.name} at ${new Date().toLocaleString()}`);
+
+        // Update to the next page
+        await updateGroupConfig(group.group_id, { current_page: currentPage });
+        console.log(`Updated ${group.name} to page ${currentPage}`);
 
     } catch (error) {
         console.error(`Failed to send message to ${group.name}:`, error);

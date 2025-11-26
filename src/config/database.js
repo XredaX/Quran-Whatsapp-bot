@@ -25,6 +25,7 @@ async function initDatabase() {
                 current_page INTEGER DEFAULT 1,
                 cron_schedules TEXT DEFAULT '[\"0 18 * * *\"]',
                 is_active BOOLEAN DEFAULT true,
+                pages_per_send INTEGER DEFAULT 1,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         `);
@@ -89,6 +90,10 @@ async function updateGroupConfig(groupId, updates) {
     if (updates.is_active !== undefined) {
         fields.push(`is_active = $${paramCount++}`);
         values.push(updates.is_active);
+    }
+    if (updates.pages_per_send !== undefined) {
+        fields.push(`pages_per_send = $${paramCount++}`);
+        values.push(updates.pages_per_send);
     }
 
     if (fields.length === 0) return null;
