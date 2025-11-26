@@ -329,8 +329,8 @@ async function handleRemoveSchedule(msg) {
 
     const schedules = JSON.parse(state.group.cron_schedules || '["0 18 * * *"]');
 
-    if (schedules.length === 1) {
-        await msg.reply(t(lang, 'cannotRemoveLast'));
+    if (schedules.length === 0) {
+        await msg.reply(t(lang, 'noSchedules'));
         return;
     }
 
@@ -359,9 +359,22 @@ async function handleRemoveScheduleSelection(msg, selection) {
 
     const removedSchedule = schedules.splice(scheduleIndex, 1)[0];
 
-    await updateGroupConfig(state.group.group_id, { cron_schedules: schedules });
+    // If no schedules left, pause the group
+    let isActive = state.group.is_active;
+    let message = t(lang, 'scheduleRemoved', cronToTime(removedSchedule));
+
+    if (schedules.length === 0) {
+        isActive = false;
+        message += '\n\n' + t(lang, 'autoPaused');
+    }
+
+    await updateGroupConfig(state.group.group_id, {
+        cron_schedules: schedules,
+        is_active: isActive
+    });
+
     await reloadJobs();
-    await msg.reply(t(lang, 'scheduleRemoved', cronToTime(removedSchedule)));
+    await msg.reply(message);
     delete userStates[userId];
 }
 
