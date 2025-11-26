@@ -1,14 +1,19 @@
 const inspirationalQuotes = [
-    "📖 The Prophet ﷺ said: 'The best among you are those who learn the Quran and teach it.' (Bukhari)",
-    "✨ The Prophet ﷺ said: 'Read the Quran, for it will come as an intercessor for its reciters on the Day of Resurrection.' (Muslim)",
-    "🌟 The Prophet ﷺ said: 'Whoever reads a letter from the Book of Allah will receive a hasanah (good deed), and every hasanah will be multiplied by ten.' (Tirmidhi)",
-    "💫 The Prophet ﷺ said: 'The one who is proficient in the recitation of the Quran will be with the honorable and obedient scribes (angels).' (Bukhari & Muslim)",
-    "🤲 Allah says: 'Indeed, this Quran guides to that which is most suitable.' (Quran 17:9)",
-    "📿 The Prophet ﷺ said: 'Verily, the one who recites the Quran beautifully will be in the company of the noble and obedient angels.' (Bukhari)",
-    "🌙 The Prophet ﷺ said: 'The Quran is an intercessor and it is deservedly believed in.' (Ibn Majah)",
-    "⭐ Abdullah ibn Mas'ud reported: The Prophet ﷺ said, 'This Quran is a banquet from Allah, so learn as much as you can from His banquet.' (Hakim)",
-    "🕌 The Prophet ﷺ said: 'Whoever recites the Quran and acts upon it, his parents will be given a crown on the Day of Resurrection.' (Abu Dawud)",
-    "💎 The Prophet ﷺ said: 'The reciter of the Quran will be told on the Day of Judgment: Read and ascend, and recite as you used to recite in the world.' (Tirmidhi)"
+    "📖 قال النبي ﷺ: «خَيْرُكُمْ مَن تَعَلَّمَ القُرْآنَ وعَلَّمَهُ» (البخاري)",
+    "✨ قال النبي ﷺ: «اقْرَؤُوا القُرْآنَ فإنَّه يَأْتي يَومَ القِيامَةِ شَفِيعًا لأَصْحابِهِ» (مسلم)",
+    "🌟 قال النبي ﷺ: «مَن قَرَأَ حَرْفًا مِن كِتابِ اللَّهِ فَلَهُ بهِ حَسَنَةٌ، والحَسَنَةُ بعَشْرِ أَمْثالِها» (الترمذي)",
+    "💫 قال النبي ﷺ: «الماهِرُ بالقُرْآنِ مع السَّفَرَةِ الكِرامِ البَرَرَةِ» (البخاري ومسلم)",
+    "🤲 قال الله تعالى: ﴿إِنَّ هَٰذَا الْقُرْآنَ يَهْدِي لِلَّتِي هِيَ أَقْوَمُ﴾ (الإسراء: ٩)",
+    "📿 قال النبي ﷺ: «إنَّ الذي يَقْرَأُ القُرْآنَ وهو حافِظٌ له مع السَّفَرَةِ الكِرامِ البَرَرَةِ» (البخاري)",
+    "🌙 قال النبي ﷺ: «القُرْآنُ شافِعٌ مُشَفَّعٌ، وماحِلٌ مُصَدَّقٌ» (ابن ماجه)",
+    "⭐ قال عبد الله بن مسعود رضي الله عنه: قال النبي ﷺ: «إنَّ هذا القُرْآنَ مَأْدُبَةُ اللهِ، فتَعَلَّمُوا مِن مَأْدُبَتِهِ ما اسْتَطَعْتُمْ» (الحاكم)",
+    "🕌 قال النبي ﷺ: «مَن قَرَأَ القُرْآنَ وعَمِلَ بما فيه أُلْبِسَ والِداهُ تاجًا يَومَ القِيامَةِ» (أبو داود)",
+    "💎 قال النبي ﷺ: «يُقالُ لِصاحِبِ القُرْآنِ: اقْرَأْ وارْتَقِ ورَتِّلْ كما كُنْتَ تُرَتِّلُ في الدُّنْيا» (الترمذي)",
+    "🌺 قال الله تعالى: ﴿وَنُنَزِّلُ مِنَ الْقُرْآنِ مَا هُوَ شِفَاءٌ وَرَحْمَةٌ لِّلْمُؤْمِنِينَ﴾ (الإسراء: ٨٢)",
+    "🌸 قال النبي ﷺ: «أَفْضَلُ العِبادَةِ قِراءَةُ القُرْآنِ» (البيهقي)",
+    "🍃 قال النبي ﷺ: «مَثَلُ المُؤْمِنِ الذي يَقْرَأُ القُرْآنَ كَمَثَلِ الأُتْرُجَّةِ، رِيحُها طَيِّبٌ وطَعْمُها طَيِّبٌ» (البخاري ومسلم)",
+    "✨ قال الله تعالى: ﴿أَفَلَا يَتَدَبَّرُونَ الْقُرْآنَ﴾ (محمد: ٢٤)",
+    "🌼 قال النبي ﷺ: «مَن قامَ بعَشْرِ آياتٍ لَمْ يُكْتَبْ مِنَ الغافِلِينَ» (أبو داود)"
 ];
 
 function getRandomQuote() {
