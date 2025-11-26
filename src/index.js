@@ -24,7 +24,15 @@ const client = new Client({
 
 client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
-    console.log('Scan the QR code above to log in.');
+    console.log('\n===========================================');
+    console.log('QR CODE FOR WHATSAPP LOGIN');
+    console.log('===========================================');
+    console.log('\nOption 1: Scan the QR code above');
+    console.log('\nOption 2: Open this URL in your browser:');
+    console.log(`https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(qr)}`);
+    console.log('\nOption 3: Use this link on your phone:');
+    console.log(`https://qr.link/qr?data=${encodeURIComponent(qr)}`);
+    console.log('\n===========================================\n');
 });
 
 client.on('ready', async () => {
