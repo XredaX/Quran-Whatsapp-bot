@@ -49,7 +49,11 @@ function scheduleGroup(group) {
 
         schedules.forEach((cronSchedule, index) => {
             const job = schedule.scheduleJob(cronSchedule, async () => {
-                await sendQuranImage(group);
+                const { getGroup } = require('../config/database');
+                const freshGroup = await getGroup(group.group_id);
+                if (freshGroup && freshGroup.is_active) {
+                    await sendQuranImage(freshGroup);
+                }
             });
 
             const jobKey = `${group.group_id}_${index}`;
