@@ -3,6 +3,7 @@ const { MessageMedia } = require('whatsapp-web.js');
 const path = require('path');
 const fs = require('fs');
 const { getAllActiveGroups, updateGroupConfig } = require('../config/database');
+const { getRandomQuote } = require('../utils/quotes');
 
 const IMAGES_DIR = 'quran-images';
 const jobs = {};
@@ -72,8 +73,11 @@ async function sendQuranImage(group) {
 
     try {
         const media = MessageMedia.fromFilePath(imagePath);
+        const quote = getRandomQuote();
+        const caption = `📖 *Page ${group.current_page}*\n\n${quote}`;
+
         await client.sendMessage(group.group_id, media, {
-            caption: `Quran Page ${group.current_page}`
+            caption: caption
         });
 
         console.log(`✅ Sent page ${group.current_page} to ${group.name} at ${new Date().toLocaleString()}`);
