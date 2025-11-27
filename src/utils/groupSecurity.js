@@ -5,6 +5,24 @@ async function getUserAccessibleGroups(client, userId) {
         
         console.log(`Found ${allGroups.length} total groups`);
         
+        // Get the actual phone number from the contact
+        let userPhone = userId.split('@')[0];
+        
+        // If userId is @lid format, try to get the real number from contact
+        if (userId.includes('@lid')) {
+            try {
+                const contact = await client.getContactById(userId);
+                if (contact && contact.number) {
+                    userPhone = contact.number;
+                    console.log(`Resolved @lid to phone: ${userPhone}`);
+                }
+            } catch (e) {
+                console.log(`Could not resolve @lid contact, using raw: ${userPhone}`);
+            }
+        }
+        
+        console.log(`Looking for user phone: ${userPhone}`);
+        
         const userGroups = [];
         
         for (const group of allGroups) {
@@ -17,20 +35,16 @@ async function getUserAccessibleGroups(client, userId) {
                     continue;
                 }
                 
-                const participants = fullGroup.participants.map(p => p.id._serialized);
+                // Get all participant phone numbers
+                const participantPhones = fullGroup.participants.map(p => p.id._serialized.split('@')[0]);
                 
-                // Debug: log userId format
-                console.log(`Checking userId: ${userId}`);
-                console.log(`Sample participant: ${participants[0]}`);
-                
-                // Try different matching strategies
-                const isDirectMatch = participants.includes(userId);
-                const isWithoutSuffix = participants.some(p => p.startsWith(userId.split('@')[0]));
-                const userWithoutSuffix = userId.split('@')[0];
-                const isMatch = participants.some(p => 
-                    p === userId || 
-                    p.startsWith(userWithoutSuffix) || 
-                    p.includes(userWithoutSuffix)
+                // Check if user's phone is in participants (try multiple matching strategies)
+                const isMatch = participantPhones.some(phone => 
+                    phone === userPhone ||
+                    phone.endsWith(userPhone) ||
+                    userPhone.endsWith(phone) ||
+                    phone.includes(userPhone) ||
+                    userPhone.includes(phone)
                 );
                 
                 if (isMatch) {
@@ -43,7 +57,7 @@ async function getUserAccessibleGroups(client, userId) {
                     });
                     console.log(`✓ User is member of: ${fullGroup.name}`);
                 } else {
-                    console.log(`✗ User not in: ${fullGroup.name}`);
+                    console.log(`✗ User not in: ${fullGroup.name} (participants: ${participantPhones.slice(0, 3).join(', ')}...)`);
                 }
             } catch (error) {
                 console.error(`Error checking group ${group.name}:`, error);
