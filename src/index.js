@@ -5,6 +5,7 @@ require('dotenv').config();
 const { initDatabase } = require('./config/database');
 const { initScheduler, reloadJobs } = require('./services/scheduler');
 const { handleMessage, handleMenu } = require('./handlers/commands');
+const { sessionManager } = require('./utils/sessionManager');
 
 const client = new Client({
     authStrategy: new LocalAuth(),
@@ -52,12 +53,9 @@ client.on('message', async (msg) => {
     const chat = await msg.getChat();
     if (chat.isGroup) return;
 
-    try {
-        await handleMessage(msg, client);
-    } catch (error) {
-        console.error('Error handling message:', error);
-        await msg.reply('❌ An error occurred. Please try again later.');
-    }
+    // Use session manager to queue messages per user
+    // This prevents race conditions and ensures sequential processing
+    await sessionManager.handleMessage(msg, client, handleMessage);
 });
 
 client.initialize();
