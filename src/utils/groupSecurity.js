@@ -19,7 +19,21 @@ async function getUserAccessibleGroups(client, userId) {
                 
                 const participants = fullGroup.participants.map(p => p.id._serialized);
                 
-                if (participants.includes(userId)) {
+                // Debug: log userId format
+                console.log(`Checking userId: ${userId}`);
+                console.log(`Sample participant: ${participants[0]}`);
+                
+                // Try different matching strategies
+                const isDirectMatch = participants.includes(userId);
+                const isWithoutSuffix = participants.some(p => p.startsWith(userId.split('@')[0]));
+                const userWithoutSuffix = userId.split('@')[0];
+                const isMatch = participants.some(p => 
+                    p === userId || 
+                    p.startsWith(userWithoutSuffix) || 
+                    p.includes(userWithoutSuffix)
+                );
+                
+                if (isMatch) {
                     userGroups.push({
                         id: fullGroup.id._serialized,
                         name: fullGroup.name,
