@@ -1,4 +1,4 @@
-const { getOrCreateUser, getUserGroups, linkGroup, updateGroupConfig, getGroup, getUser, updateUserLanguage, deleteGroup } = require('../config/database');
+const { getOrCreateUser, getUserGroups, linkGroup, updateGroupConfig, getGroup, getUser, updateUserLanguage, deleteGroup, getSubscription, createSubscription, updateSubscription, deleteSubscription } = require('../config/database');
 const { reloadJobs } = require('../services/scheduler');
 const { t } = require('../utils/translations');
 const { getUserAccessibleGroups, isUserInGroup } = require('../utils/groupSecurity');
@@ -89,6 +89,20 @@ async function handleMessage(msg, client, session = null) {
         await handlePagesPerSendInput(msg, messageText);
     } else if (state.command === 'settings' && state.step === 'confirm_delete') {
         await handleDeleteConfirmation(msg, messageText);
+    } else if (state.command === 'subscribe' && state.step === 'prompt') {
+        await handleSubscribePrompt(msg, messageText);
+    } else if (state.command === 'subscription_settings' && state.step === 'configuring') {
+        await handleSubscriptionSettingsOption(msg, messageText);
+    } else if (state.command === 'subscription_settings' && state.step === 'waiting_page') {
+        await handleSubscriptionPageInput(msg, messageText);
+    } else if (state.command === 'subscription_settings' && state.step === 'waiting_add_schedule') {
+        await handleSubscriptionAddSchedule(msg, messageText);
+    } else if (state.command === 'subscription_settings' && state.step === 'waiting_remove_schedule') {
+        await handleSubscriptionRemoveScheduleSelection(msg, messageText);
+    } else if (state.command === 'subscription_settings' && state.step === 'waiting_pages_per_send') {
+        await handleSubscriptionPagesPerSend(msg, messageText);
+    } else if (state.command === 'subscription_settings' && state.step === 'confirm_unsubscribe') {
+        await handleUnsubscribeConfirmation(msg, messageText);
     } else {
         await handleMenu(msg);
     }
@@ -156,14 +170,17 @@ async function handleMenuSelection(msg, selection, client) {
             await handleMyGroups(msg);
             break;
         case '3':
+            await handleSubscription(msg);
+            break;
+        case '4':
             await msg.reply(addNavigationFooter(t(lang, 'help'), lang));
             sessionManager.clearUserState(userId);
             break;
-        case '4':
+        case '5':
             await handleLanguageSelection(msg);
             break;
         default:
-            await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 4), lang));
+            await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 5), lang));
     }
 }
 
@@ -774,6 +791,291 @@ async function handleEditConfirmation(msg, input) {
             await msg.reply(addNavigationFooter(t(lang, 'error'), lang));
             sessionManager.clearUserState(userId);
         }
+    } else if (trimmed === '2') {
+        await msg.reply(addNavigationFooter(t(lang, 'deleteCancelled'), lang));
+        sessionManager.clearUserState(userId);
+    } else {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 2), lang));
+    }
+}
+
+// ==================== SUBSCRIPTION HANDLERS ====================
+
+async function handleSubscription(msg) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    await getOrCreateUser(userId);
+
+    const subscription = await getSubscription(userId);
+
+    if (subscription) {
+        // User already subscribed - show settings
+        await showSubscriptionSettings(msg, subscription);
+    } else {
+        // Not subscribed - ask if they want to
+        sessionManager.setUserState(userId, { command: 'subscribe', step: 'prompt' });
+        await msg.reply(addNavigationFooter(t(lang, 'subscribePrompt') + t(lang, 'notSubscribed'), lang));
+    }
+}
+
+async function showSubscriptionSettings(msg, subscription) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+
+    const schedules = JSON.parse(subscription.cron_schedules || '["0 18 * * *"]');
+    const pagesPerSend = subscription.pages_per_send || 1;
+
+    let schedulesList = '';
+    schedules.forEach((s, i) => {
+        schedulesList += `   ${i + 1}. ${cronToTime(s)}\n`;
+    });
+
+    const statusText = subscription.is_active ? '✅ Active' : '❌ Paused';
+
+    const configText = t(lang, 'mySubscription') +
+        t(lang, 'currentPage', subscription.current_page) +
+        t(lang, 'pagesPerSend', pagesPerSend) +
+        t(lang, 'schedules', schedules.length) + schedulesList +
+        t(lang, 'status', statusText) +
+        t(lang, 'subscriptionSettings');
+
+    sessionManager.setUserState(userId, {
+        command: 'subscription_settings',
+        step: 'configuring',
+        subscription: subscription
+    });
+
+    await msg.reply(addNavigationFooter(configText, lang));
+}
+
+async function handleSubscribePrompt(msg, selection) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+
+    if (selection === '1') {
+        // Subscribe
+        await getOrCreateUser(userId);
+        const result = await createSubscription(userId);
+        
+        if (result.success) {
+            await reloadJobs();
+            await msg.reply(addNavigationFooter(t(lang, 'subscribed'), lang));
+            // Show settings after subscribing
+            await showSubscriptionSettings(msg, result.subscription);
+        } else {
+            await msg.reply(addNavigationFooter(t(lang, 'alreadySubscribed'), lang));
+            const subscription = await getSubscription(userId);
+            await showSubscriptionSettings(msg, subscription);
+        }
+    } else if (selection === '2') {
+        sessionManager.clearUserState(userId);
+        await handleMenu(msg);
+    } else {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 2), lang));
+    }
+}
+
+async function handleSubscriptionSettingsOption(msg, option) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    const state = sessionManager.getUserState(userId);
+
+    if (!state || !state.subscription) {
+        await msg.reply(addNavigationFooter(t(lang, 'sessionExpired'), lang));
+        sessionManager.clearUserState(userId);
+        return;
+    }
+
+    const lowerOption = option.toLowerCase().trim();
+    if (lowerOption === 'menu' || lowerOption === 'cancel' || lowerOption === 'home') {
+        sessionManager.clearUserState(userId);
+        await handleMenu(msg);
+        return;
+    }
+
+    switch (option) {
+        case '1':
+            state.step = 'waiting_page';
+            sessionManager.setUserState(userId, state);
+            await msg.reply(addNavigationFooter(t(lang, 'setPage'), lang));
+            break;
+        case '2':
+            state.step = 'waiting_add_schedule';
+            sessionManager.setUserState(userId, state);
+            await msg.reply(addNavigationFooter(t(lang, 'addSchedule'), lang));
+            break;
+        case '3':
+            await handleSubscriptionRemoveSchedule(msg);
+            break;
+        case '4':
+            state.step = 'waiting_pages_per_send';
+            sessionManager.setUserState(userId, state);
+            await msg.reply(addNavigationFooter(t(lang, 'setPagesPerSend'), lang));
+            break;
+        case '5':
+            await handleSubscriptionToggleStatus(msg);
+            break;
+        case '6':
+            state.step = 'confirm_unsubscribe';
+            sessionManager.setUserState(userId, state);
+            await msg.reply(addNavigationFooter(t(lang, 'confirmUnsubscribe'), lang));
+            break;
+        case '7':
+            sessionManager.clearUserState(userId);
+            await handleMenu(msg);
+            break;
+        default:
+            await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 7), lang));
+    }
+}
+
+async function handleSubscriptionPageInput(msg, pageNumber) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+
+    const lowerInput = pageNumber.toLowerCase().trim();
+    if (lowerInput === 'menu' || lowerInput === 'cancel' || lowerInput === 'back') {
+        const subscription = await getSubscription(userId);
+        await showSubscriptionSettings(msg, subscription);
+        return;
+    }
+
+    const page = parseInt(pageNumber);
+    if (isNaN(page) || page < 1 || page > 604) {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidPage'), lang));
+        return;
+    }
+
+    await updateSubscription(userId, { current_page: page });
+    await reloadJobs();
+    await msg.reply(addNavigationFooter(t(lang, 'pageUpdated', 'your subscription', page), lang));
+    sessionManager.clearUserState(userId);
+}
+
+async function handleSubscriptionAddSchedule(msg, schedule) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+
+    const lowerInput = schedule.toLowerCase().trim();
+    if (lowerInput === 'menu' || lowerInput === 'cancel' || lowerInput === 'back') {
+        const subscription = await getSubscription(userId);
+        await showSubscriptionSettings(msg, subscription);
+        return;
+    }
+
+    const cron = timeToCron(schedule);
+    if (!cron) {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidTime'), lang));
+        return;
+    }
+
+    const subscription = await getSubscription(userId);
+    const currentSchedules = JSON.parse(subscription.cron_schedules || '["0 18 * * *"]');
+    currentSchedules.push(cron);
+
+    await updateSubscription(userId, { cron_schedules: currentSchedules });
+    await reloadJobs();
+    await msg.reply(addNavigationFooter(t(lang, 'scheduleAdded', 'your subscription', currentSchedules.length), lang));
+    sessionManager.clearUserState(userId);
+}
+
+async function handleSubscriptionRemoveSchedule(msg) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    const state = sessionManager.getUserState(userId);
+
+    const schedules = JSON.parse(state.subscription.cron_schedules || '["0 18 * * *"]');
+
+    if (schedules.length === 0) {
+        await msg.reply(addNavigationFooter(t(lang, 'noSchedules'), lang));
+        return;
+    }
+
+    let schedulesList = '';
+    schedules.forEach((s, i) => {
+        schedulesList += `${i + 1}. ${cronToTime(s)}\n`;
+    });
+
+    state.step = 'waiting_remove_schedule';
+    sessionManager.setUserState(userId, state);
+    await msg.reply(addNavigationFooter(t(lang, 'selectScheduleToRemove', schedulesList), lang));
+}
+
+async function handleSubscriptionRemoveScheduleSelection(msg, selection) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    const state = sessionManager.getUserState(userId);
+
+    const lowerSelection = selection.toLowerCase().trim();
+    if (lowerSelection === 'menu' || lowerSelection === 'cancel' || lowerSelection === 'back') {
+        const subscription = await getSubscription(userId);
+        await showSubscriptionSettings(msg, subscription);
+        return;
+    }
+
+    const scheduleIndex = parseInt(selection) - 1;
+    const schedules = JSON.parse(state.subscription.cron_schedules || '["0 18 * * *"]');
+
+    if (isNaN(scheduleIndex) || scheduleIndex < 0 || scheduleIndex >= schedules.length) {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidSelection'), lang));
+        return;
+    }
+
+    schedules.splice(scheduleIndex, 1);
+    await updateSubscription(userId, { cron_schedules: schedules });
+    await reloadJobs();
+    await msg.reply(addNavigationFooter(t(lang, 'scheduleRemoved', 'your subscription'), lang));
+    sessionManager.clearUserState(userId);
+}
+
+async function handleSubscriptionPagesPerSend(msg, pagesCount) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+
+    const lowerInput = pagesCount.toLowerCase().trim();
+    if (lowerInput === 'menu' || lowerInput === 'cancel' || lowerInput === 'back') {
+        const subscription = await getSubscription(userId);
+        await showSubscriptionSettings(msg, subscription);
+        return;
+    }
+
+    const pages = parseInt(pagesCount);
+    if (isNaN(pages) || pages < 1 || pages > 50) {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidPagesPerSend'), lang));
+        return;
+    }
+
+    await updateSubscription(userId, { pages_per_send: pages });
+    await reloadJobs();
+    await msg.reply(addNavigationFooter(t(lang, 'pagesPerSendUpdated', 'your subscription', pages), lang));
+    sessionManager.clearUserState(userId);
+}
+
+async function handleSubscriptionToggleStatus(msg) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    const state = sessionManager.getUserState(userId);
+
+    const newStatus = !state.subscription.is_active;
+    await updateSubscription(userId, { is_active: newStatus });
+    await reloadJobs();
+
+    const statusText = newStatus ? '✅ Active' : '❌ Paused';
+    await msg.reply(addNavigationFooter(t(lang, 'statusToggled', 'your subscription', statusText), lang));
+    sessionManager.clearUserState(userId);
+}
+
+async function handleUnsubscribeConfirmation(msg, response) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+
+    const trimmed = response.trim();
+
+    if (trimmed === '1') {
+        await deleteSubscription(userId);
+        await reloadJobs();
+        await msg.reply(addNavigationFooter(t(lang, 'unsubscribed'), lang));
+        sessionManager.clearUserState(userId);
     } else if (trimmed === '2') {
         await msg.reply(addNavigationFooter(t(lang, 'deleteCancelled'), lang));
         sessionManager.clearUserState(userId);

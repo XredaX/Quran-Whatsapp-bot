@@ -30,6 +30,19 @@ async function initDatabase() {
             )
         `);
 
+        // Private subscriptions table
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(255) UNIQUE REFERENCES users(whatsapp_id) ON DELETE CASCADE,
+                current_page INTEGER DEFAULT 1,
+                cron_schedules TEXT DEFAULT '[\"0 18 * * *\"]',
+                is_active BOOLEAN DEFAULT true,
+                pages_per_send INTEGER DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+
         console.log('Database schema initialized');
     } finally {
         client.release();
@@ -133,6 +146,73 @@ async function updateUserLanguage(whatsappId, language) {
     );
 }
 
+// Subscription functions for private chat
+async function getSubscription(userId) {
+    const result = await pool.query(
+        'SELECT * FROM subscriptions WHERE user_id = $1',
+        [userId]
+    );
+    return result.rows[0];
+}
+
+async function createSubscription(userId) {
+    try {
+        const result = await pool.query(
+            'INSERT INTO subscriptions (user_id) VALUES ($1) RETURNING *',
+            [userId]
+        );
+        return { success: true, subscription: result.rows[0] };
+    } catch (error) {
+        if (error.code === '23505') {
+            return { success: false, error: 'Already subscribed' };
+        }
+        throw error;
+    }
+}
+
+async function updateSubscription(userId, updates) {
+    const fields = [];
+    const values = [];
+    let paramCount = 1;
+
+    if (updates.current_page !== undefined) {
+        fields.push(`current_page = $${paramCount++}`);
+        values.push(updates.current_page);
+    }
+    if (updates.cron_schedules !== undefined) {
+        fields.push(`cron_schedules = $${paramCount++}`);
+        values.push(JSON.stringify(updates.cron_schedules));
+    }
+    if (updates.is_active !== undefined) {
+        fields.push(`is_active = $${paramCount++}`);
+        values.push(updates.is_active);
+    }
+    if (updates.pages_per_send !== undefined) {
+        fields.push(`pages_per_send = $${paramCount++}`);
+        values.push(updates.pages_per_send);
+    }
+
+    if (fields.length === 0) return null;
+
+    values.push(userId);
+    const result = await pool.query(
+        `UPDATE subscriptions SET ${fields.join(', ')} WHERE user_id = $${paramCount} RETURNING *`,
+        values
+    );
+    return result.rows[0];
+}
+
+async function deleteSubscription(userId) {
+    await pool.query('DELETE FROM subscriptions WHERE user_id = $1', [userId]);
+}
+
+async function getAllActiveSubscriptions() {
+    const result = await pool.query(
+        'SELECT s.*, u.language FROM subscriptions s JOIN users u ON s.user_id = u.whatsapp_id WHERE s.is_active = true'
+    );
+    return result.rows;
+}
+
 module.exports = {
     initDatabase,
     getOrCreateUser,
@@ -143,5 +223,10 @@ module.exports = {
     getAllActiveGroups,
     updateGroupConfig,
     getGroup,
-    deleteGroup
+    deleteGroup,
+    getSubscription,
+    createSubscription,
+    updateSubscription,
+    deleteSubscription,
+    getAllActiveSubscriptions
 };
