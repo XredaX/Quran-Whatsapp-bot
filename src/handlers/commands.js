@@ -41,7 +41,6 @@ async function handleMessage(msg, client, session = null) {
     const messageText = msg.body.trim();
     const lowerText = messageText.toLowerCase();
 
-    // Get state from session if provided, otherwise from session manager
     const state = session ? session.getState() : sessionManager.getUserState(userId);
 
     if (lowerText === '!language') {
@@ -49,7 +48,8 @@ async function handleMessage(msg, client, session = null) {
         return;
     }
 
-    if (!state && (lowerText === 'menu' || lowerText === 'help' || lowerText === 'start')) {
+    if (lowerText === 'menu' || lowerText === 'help' || lowerText === 'start') {
+        sessionManager.clearUserState(userId);
         await handleMenu(msg);
         return;
     }
@@ -161,7 +161,9 @@ async function handleMenuSelection(msg, selection, client) {
     const lang = await getUserLang(userId);
 
     const lowerSelection = selection.toLowerCase().trim();
+    
     if (lowerSelection === 'menu' || lowerSelection === 'help' || lowerSelection === 'start') {
+        sessionManager.clearUserState(userId);
         await handleMenu(msg);
         return;
     }
@@ -193,7 +195,6 @@ async function handleLink(msg, client) {
     const lang = await getUserLang(userId);
     await getOrCreateUser(userId);
 
-    // If @lid format, detect phone number from groups
     if (userId.includes('@lid')) {
         const { detectAndStorePhoneNumber } = require('../utils/phoneResolver');
         await detectAndStorePhoneNumber(client, userId);
@@ -844,8 +845,6 @@ async function handleEditConfirmation(msg, input) {
     }
 }
 
-// ==================== SUBSCRIPTION HANDLERS ====================
-
 async function handleSubscription(msg) {
     const userId = msg.from;
     const lang = await getUserLang(userId);
@@ -854,10 +853,8 @@ async function handleSubscription(msg) {
     const subscription = await getSubscription(userId);
 
     if (subscription) {
-        // User already subscribed - show settings
         await showSubscriptionSettings(msg, subscription);
     } else {
-        // Not subscribed - ask if they want to
         sessionManager.setUserState(userId, { command: 'subscribe', step: 'prompt' });
         await msg.reply(addNavigationFooter(t(lang, 'subscribePrompt') + t(lang, 'notSubscribed'), lang));
     }
@@ -905,14 +902,12 @@ async function handleSubscribePrompt(msg, selection) {
     const lang = await getUserLang(userId);
 
     if (selection === '1') {
-        // Subscribe
         await getOrCreateUser(userId);
         const result = await createSubscription(userId);
         
         if (result.success) {
             await reloadJobs();
             await msg.reply(addNavigationFooter(t(lang, 'subscribed'), lang));
-            // Show settings after subscribing
             await showSubscriptionSettings(msg, result.subscription);
         } else {
             await msg.reply(addNavigationFooter(t(lang, 'alreadySubscribed'), lang));
