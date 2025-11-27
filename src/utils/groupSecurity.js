@@ -3,26 +3,40 @@ async function getUserAccessibleGroups(client, userId) {
         const chats = await client.getChats();
         const allGroups = chats.filter(chat => chat.isGroup);
         
+        console.log(`Found ${allGroups.length} total groups`);
+        
         const userGroups = [];
         
         for (const group of allGroups) {
             try {
-                const participants = group.participants.map(p => p.id._serialized);
+                // Fetch full group data to ensure participants are loaded
+                const fullGroup = await client.getChatById(group.id._serialized);
+                
+                if (!fullGroup.participants || fullGroup.participants.length === 0) {
+                    console.log(`Group ${group.name} has no participants loaded, skipping`);
+                    continue;
+                }
+                
+                const participants = fullGroup.participants.map(p => p.id._serialized);
                 
                 if (participants.includes(userId)) {
                     userGroups.push({
-                        id: group.id._serialized,
-                        name: group.name,
-                        participantCount: group.participants.length,
-                        description: group.description || '',
-                        createdAt: group.createdAt || null
+                        id: fullGroup.id._serialized,
+                        name: fullGroup.name,
+                        participantCount: fullGroup.participants.length,
+                        description: fullGroup.description || '',
+                        createdAt: fullGroup.createdAt || null
                     });
+                    console.log(`✓ User is member of: ${fullGroup.name}`);
+                } else {
+                    console.log(`✗ User not in: ${fullGroup.name}`);
                 }
             } catch (error) {
                 console.error(`Error checking group ${group.name}:`, error);
             }
         }
         
+        console.log(`User has access to ${userGroups.length} groups`);
         return userGroups;
     } catch (error) {
         console.error('Error getting user accessible groups:', error);
