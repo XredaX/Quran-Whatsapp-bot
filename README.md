@@ -26,8 +26,6 @@
 - ⏰ **Flexible Scheduling** - Multiple daily sending times per group/subscription
 - 📄 **Batch Sending** - Send 1-50 pages per schedule
 - 🧙‍♂️ **Setup Wizard** - Guided configuration for new groups
-- ✅ **Confirmation System** - Preview changes before applying
-- 🔒 **Secure** - Users only see groups they're members of
 
 ## Quick Start
 

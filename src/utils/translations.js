@@ -99,13 +99,14 @@ const translations = {
         field_is_active: 'Status',
         
         // Daily Wird (private)
+        yourWird: 'your Daily Wird',
         subscribePrompt: '📖 *Daily Wird*\n\nReceive your daily Quran pages directly in this chat!\n\n',
         alreadySubscribed: '✅ Your Daily Wird is already active!\n\nManage your wird below:',
         notSubscribed: 'You don\'t have a Daily Wird yet.\n\n1️⃣ Start my Daily Wird\n2️⃣ Back to menu\n\nReply with a number (1-2)',
         subscribed: '✅ Your Daily Wird is now active!\n\nYou will receive Quran pages directly in this chat.',
         unsubscribed: '✅ Your Daily Wird has been stopped.\n\nYou can start it again anytime from the menu.',
         mySubscription: '📖 *My Daily Wird*\n\n',
-        subscriptionSettings: '*What would you like to change?*\n\n1️⃣ Set page number\n2️⃣ Add schedule\n3️⃣ Remove schedule\n4️⃣ Set pages per send\n5️⃣ Toggle status (pause/resume)\n6️⃣ Stop Daily Wird\n7️⃣ Back to menu\n\nReply with a number (1-7)',
+        subscriptionSettings: '*What would you like to change?*\n\n1️⃣ Set page number\n2️⃣ Add schedule\n3️⃣ Remove schedule\n4️⃣ Set pages per send\n5️⃣ Pause/Resume (temporary)\n6️⃣ Stop Daily Wird (delete)\n7️⃣ Back to menu\n\nReply with a number (1-7)',
         confirmUnsubscribe: '⚠️ *Confirm Stop*\n\nAre you sure you want to stop your Daily Wird?\n\n1️⃣ Yes, stop\n2️⃣ No, cancel\n\nReply with number (1-2)'
     },
     fr: {
@@ -208,13 +209,14 @@ const translations = {
         field_is_active: 'Statut',
         
         // Wird quotidien (privé)
+        yourWird: 'votre Wird quotidien',
         subscribePrompt: '📖 *Wird Quotidien*\n\nRecevez vos pages du Coran directement dans cette conversation!\n\n',
         alreadySubscribed: '✅ Votre Wird quotidien est déjà actif!\n\nGérez votre wird ci-dessous:',
         notSubscribed: 'Vous n\'avez pas encore de Wird quotidien.\n\n1️⃣ Commencer mon Wird quotidien\n2️⃣ Retour au menu\n\nRépondez avec un numéro (1-2)',
         subscribed: '✅ Votre Wird quotidien est maintenant actif!\n\nVous recevrez les pages du Coran directement dans cette conversation.',
         unsubscribed: '✅ Votre Wird quotidien a été arrêté.\n\nVous pouvez le reprendre à tout moment depuis le menu.',
         mySubscription: '📖 *Mon Wird Quotidien*\n\n',
-        subscriptionSettings: '*Que souhaitez-vous modifier?*\n\n1️⃣ Définir le numéro de page\n2️⃣ Ajouter un horaire\n3️⃣ Supprimer un horaire\n4️⃣ Définir pages par envoi\n5️⃣ Basculer le statut (pause/reprise)\n6️⃣ Arrêter le Wird quotidien\n7️⃣ Retour au menu\n\nRépondez avec un numéro (1-7)',
+        subscriptionSettings: '*Que souhaitez-vous modifier?*\n\n1️⃣ Définir le numéro de page\n2️⃣ Ajouter un horaire\n3️⃣ Supprimer un horaire\n4️⃣ Définir pages par envoi\n5️⃣ Pause/Reprise (temporaire)\n6️⃣ Arrêter le Wird (supprimer)\n7️⃣ Retour au menu\n\nRépondez avec un numéro (1-7)',
         confirmUnsubscribe: '⚠️ *Confirmer l\'arrêt*\n\nÊtes-vous sûr de vouloir arrêter votre Wird quotidien?\n\n1️⃣ Oui, arrêter\n2️⃣ Non, annuler\n\nRépondez avec le numéro (1-2)'
     },
     ar: {
@@ -317,13 +319,14 @@ const translations = {
         field_is_active: 'الحالة',
         
         // وردي اليومي (خاص)
+        yourWird: 'وردك اليومي',
         subscribePrompt: '📖 *وردي اليومي*\n\nاستلم صفحات القرآن مباشرة في هذه المحادثة!\n\n',
         alreadySubscribed: '✅ وردك اليومي مفعّل بالفعل!\n\nإدارة وردك أدناه:',
         notSubscribed: 'ليس لديك ورد يومي بعد.\n\n1️⃣ ابدأ وردي اليومي\n2️⃣ العودة للقائمة\n\nأجب برقم (1-2)',
         subscribed: '✅ تم تفعيل وردك اليومي!\n\nستستلم صفحات القرآن مباشرة في هذه المحادثة.',
         unsubscribed: '✅ تم إيقاف وردك اليومي.\n\nيمكنك استئنافه في أي وقت من القائمة.',
         mySubscription: '📖 *وردي اليومي*\n\n',
-        subscriptionSettings: '*ماذا تريد أن تغير؟*\n\n1️⃣ تعيين رقم الصفحة\n2️⃣ إضافة موعد\n3️⃣ حذف موعد\n4️⃣ تعيين عدد الصفحات لكل إرسال\n5️⃣ تبديل الحالة (إيقاف/استئناف)\n6️⃣ إيقاف الورد اليومي\n7️⃣ العودة للقائمة\n\nأجب برقم (1-7)',
+        subscriptionSettings: '*ماذا تريد أن تغير؟*\n\n1️⃣ تعيين رقم الصفحة\n2️⃣ إضافة موعد\n3️⃣ حذف موعد\n4️⃣ تعيين عدد الصفحات لكل إرسال\n5️⃣ إيقاف/استئناف مؤقت\n6️⃣ إلغاء الورد نهائياً (حذف)\n7️⃣ العودة للقائمة\n\nأجب برقم (1-7)',
         confirmUnsubscribe: '⚠️ *تأكيد الإيقاف*\n\nهل أنت متأكد من إيقاف وردك اليومي؟\n\n1️⃣ نعم، إيقاف\n2️⃣ لا، إلغاء\n\nأجب برقم (1-2)'
     }
 };

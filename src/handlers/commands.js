@@ -380,7 +380,7 @@ async function handleSettings(msg, groupId) {
         schedulesList += `   ${i + 1}. ${cronToTime(s)}\n`;
     });
 
-    const statusText = group.is_active ? '✅ Active' : '❌ Paused';
+    const statusText = group.is_active ? t(lang, 'statusActive') : t(lang, 'statusPaused');
 
     const configText = t(lang, 'configure', group.name) +
         t(lang, 'currentPage', group.current_page) +
@@ -606,7 +606,7 @@ async function handleToggleStatus(msg) {
     await updateGroupConfig(state.group.group_id, { is_active: newStatus });
     await reloadJobs();
 
-    const statusText = newStatus ? '✅ Active' : '❌ Paused';
+    const statusText = newStatus ? t(lang, 'statusActive') : t(lang, 'statusPaused');
     await msg.reply(addNavigationFooter(t(lang, 'statusToggled', state.group.name, statusText), lang));
     sessionManager.clearUserState(userId);
 }
@@ -830,7 +830,7 @@ async function showSubscriptionSettings(msg, subscription) {
         schedulesList += `   ${i + 1}. ${cronToTime(s)}\n`;
     });
 
-    const statusText = subscription.is_active ? '✅ Active' : '❌ Paused';
+    const statusText = subscription.is_active ? t(lang, 'statusActive') : t(lang, 'statusPaused');
 
     const configText = t(lang, 'mySubscription') +
         t(lang, 'currentPage', subscription.current_page) +
@@ -948,7 +948,7 @@ async function handleSubscriptionPageInput(msg, pageNumber) {
 
     await updateSubscription(userId, { current_page: page });
     await reloadJobs();
-    await msg.reply(addNavigationFooter(t(lang, 'pageUpdated', 'your subscription', page), lang));
+    await msg.reply(addNavigationFooter(t(lang, 'pageUpdated', t(lang, 'yourWird'), page), lang));
     sessionManager.clearUserState(userId);
 }
 
@@ -975,7 +975,7 @@ async function handleSubscriptionAddSchedule(msg, schedule) {
 
     await updateSubscription(userId, { cron_schedules: currentSchedules });
     await reloadJobs();
-    await msg.reply(addNavigationFooter(t(lang, 'scheduleAdded', 'your subscription', currentSchedules.length), lang));
+    await msg.reply(addNavigationFooter(t(lang, 'scheduleAdded', t(lang, 'yourWird'), currentSchedules.length), lang));
     sessionManager.clearUserState(userId);
 }
 
@@ -1024,7 +1024,7 @@ async function handleSubscriptionRemoveScheduleSelection(msg, selection) {
     schedules.splice(scheduleIndex, 1);
     await updateSubscription(userId, { cron_schedules: schedules });
     await reloadJobs();
-    await msg.reply(addNavigationFooter(t(lang, 'scheduleRemoved', 'your subscription'), lang));
+    await msg.reply(addNavigationFooter(t(lang, 'scheduleRemoved', t(lang, 'yourWird')), lang));
     sessionManager.clearUserState(userId);
 }
 
@@ -1047,7 +1047,7 @@ async function handleSubscriptionPagesPerSend(msg, pagesCount) {
 
     await updateSubscription(userId, { pages_per_send: pages });
     await reloadJobs();
-    await msg.reply(addNavigationFooter(t(lang, 'pagesPerSendUpdated', 'your subscription', pages), lang));
+    await msg.reply(addNavigationFooter(t(lang, 'pagesPerSendUpdated', t(lang, 'yourWird'), pages), lang));
     sessionManager.clearUserState(userId);
 }
 
@@ -1060,8 +1060,8 @@ async function handleSubscriptionToggleStatus(msg) {
     await updateSubscription(userId, { is_active: newStatus });
     await reloadJobs();
 
-    const statusText = newStatus ? '✅ Active' : '❌ Paused';
-    await msg.reply(addNavigationFooter(t(lang, 'statusToggled', 'your subscription', statusText), lang));
+    const statusText = newStatus ? t(lang, 'statusActive') : t(lang, 'statusPaused');
+    await msg.reply(addNavigationFooter(t(lang, 'statusToggled', t(lang, 'yourWird'), statusText), lang));
     sessionManager.clearUserState(userId);
 }
 
