@@ -43,6 +43,19 @@ async function initDatabase() {
             )
         `);
 
+        // Khatma completions tracking
+        await client.query(`
+            CREATE TABLE IF NOT EXISTS khatmas (
+                id SERIAL PRIMARY KEY,
+                user_id VARCHAR(255) REFERENCES users(whatsapp_id) ON DELETE CASCADE,
+                group_id VARCHAR(255),
+                is_private BOOLEAN DEFAULT false,
+                started_at TIMESTAMP,
+                completed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                total_days INTEGER
+            )
+        `);
+
         console.log('Database schema initialized');
     } finally {
         client.release();
@@ -213,6 +226,56 @@ async function getAllActiveSubscriptions() {
     return result.rows;
 }
 
+// Khatma functions
+async function recordKhatma(userId, groupId, isPrivate, startedAt) {
+    const totalDays = startedAt ? Math.ceil((Date.now() - new Date(startedAt).getTime()) / (1000 * 60 * 60 * 24)) : null;
+    const result = await pool.query(
+        'INSERT INTO khatmas (user_id, group_id, is_private, started_at, total_days) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+        [userId, groupId, isPrivate, startedAt, totalDays]
+    );
+    return result.rows[0];
+}
+
+async function getKhatmaCount(userId, groupId, isPrivate) {
+    let result;
+    if (isPrivate) {
+        result = await pool.query(
+            'SELECT COUNT(*) as count FROM khatmas WHERE user_id = $1 AND is_private = true',
+            [userId]
+        );
+    } else {
+        result = await pool.query(
+            'SELECT COUNT(*) as count FROM khatmas WHERE group_id = $1',
+            [groupId]
+        );
+    }
+    return parseInt(result.rows[0].count);
+}
+
+async function getKhatmaHistory(userId, groupId, isPrivate, limit = 5) {
+    let result;
+    if (isPrivate) {
+        result = await pool.query(
+            'SELECT * FROM khatmas WHERE user_id = $1 AND is_private = true ORDER BY completed_at DESC LIMIT $2',
+            [userId, limit]
+        );
+    } else {
+        result = await pool.query(
+            'SELECT * FROM khatmas WHERE group_id = $1 ORDER BY completed_at DESC LIMIT $2',
+            [groupId, limit]
+        );
+    }
+    return result.rows;
+}
+
+async function clearKhatmaHistory(userId, groupId, isPrivate) {
+    if (isPrivate) {
+        await pool.query('DELETE FROM khatmas WHERE user_id = $1 AND is_private = true', [userId]);
+    } else {
+        await pool.query('DELETE FROM khatmas WHERE group_id = $1', [groupId]);
+    }
+}
+
 module.exports = {
     initDatabase,
     getOrCreateUser,
@@ -228,5 +291,9 @@ module.exports = {
     createSubscription,
     updateSubscription,
     deleteSubscription,
-    getAllActiveSubscriptions
+    getAllActiveSubscriptions,
+    recordKhatma,
+    getKhatmaCount,
+    getKhatmaHistory,
+    clearKhatmaHistory
 };

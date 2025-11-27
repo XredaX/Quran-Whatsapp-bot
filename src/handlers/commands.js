@@ -1,4 +1,4 @@
-const { getOrCreateUser, getUserGroups, linkGroup, updateGroupConfig, getGroup, getUser, updateUserLanguage, deleteGroup, getSubscription, createSubscription, updateSubscription, deleteSubscription } = require('../config/database');
+const { getOrCreateUser, getUserGroups, linkGroup, updateGroupConfig, getGroup, getUser, updateUserLanguage, deleteGroup, getSubscription, createSubscription, updateSubscription, deleteSubscription, getKhatmaCount, clearKhatmaHistory } = require('../config/database');
 const { reloadJobs } = require('../services/scheduler');
 const { t } = require('../utils/translations');
 const { getUserAccessibleGroups, isUserInGroup } = require('../utils/groupSecurity');
@@ -89,6 +89,8 @@ async function handleMessage(msg, client, session = null) {
         await handlePagesPerSendInput(msg, messageText);
     } else if (state.command === 'settings' && state.step === 'confirm_delete') {
         await handleDeleteConfirmation(msg, messageText);
+    } else if (state.command === 'settings' && state.step === 'confirm_reset') {
+        await handleResetConfirmation(msg, messageText);
     } else if (state.command === 'subscribe' && state.step === 'prompt') {
         await handleSubscribePrompt(msg, messageText);
     } else if (state.command === 'subscription_settings' && state.step === 'configuring') {
@@ -103,6 +105,8 @@ async function handleMessage(msg, client, session = null) {
         await handleSubscriptionPagesPerSend(msg, messageText);
     } else if (state.command === 'subscription_settings' && state.step === 'confirm_unsubscribe') {
         await handleUnsubscribeConfirmation(msg, messageText);
+    } else if (state.command === 'subscription_settings' && state.step === 'confirm_reset') {
+        await handleSubscriptionResetConfirmation(msg, messageText);
     } else {
         await handleMenu(msg);
     }
@@ -374,6 +378,10 @@ async function handleSettings(msg, groupId) {
 
     const schedules = JSON.parse(group.cron_schedules || '["0 18 * * *"]');
     const pagesPerSend = group.pages_per_send || 1;
+    const khatmaCount = await getKhatmaCount(userId, groupId, false);
+    const progressPercent = ((group.current_page / 604) * 100).toFixed(1);
+    const pagesRemaining = 604 - group.current_page;
+    const daysToComplete = Math.ceil(pagesRemaining / (pagesPerSend * schedules.length));
 
     let schedulesList = '';
     schedules.forEach((s, i) => {
@@ -383,7 +391,10 @@ async function handleSettings(msg, groupId) {
     const statusText = group.is_active ? t(lang, 'statusActive') : t(lang, 'statusPaused');
 
     const configText = t(lang, 'configure', group.name) +
-        t(lang, 'currentPage', group.current_page) +
+        '\n' + t(lang, 'progressHeader') + '\n' +
+        t(lang, 'progressPage', group.current_page, progressPercent) + '\n' +
+        t(lang, 'progressKhatmas', khatmaCount) + '\n' +
+        t(lang, 'progressEstimate', daysToComplete) + '\n\n' +
         t(lang, 'pagesPerSend', pagesPerSend) +
         t(lang, 'schedules', schedules.length) + schedulesList +
         t(lang, 'status', statusText) +
@@ -443,18 +454,24 @@ async function handleSettingsOption(msg, option) {
             break;
 
         case '6':
+            state.step = 'confirm_reset';
+            sessionManager.setUserState(userId, state);
+            await msg.reply(addNavigationFooter(t(lang, 'confirmReset'), lang));
+            break;
+
+        case '7':
             state.step = 'confirm_delete';
             sessionManager.setUserState(userId, state);
             await msg.reply(addNavigationFooter(t(lang, 'confirmDelete', state.group.name), lang));
             break;
 
-        case '7':
+        case '8':
             sessionManager.clearUserState(userId);
             await handleMyGroups(msg);
             break;
 
         default:
-            await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 7), lang));
+            await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 8), lang));
     }
 }
 
@@ -666,8 +683,30 @@ async function handleDeleteConfirmation(msg, response) {
 
     if (trimmed === '1') {
         await deleteGroup(state.group.group_id);
+        await clearKhatmaHistory(userId, state.group.group_id, false);
         await reloadJobs();
         await msg.reply(addNavigationFooter(t(lang, 'groupDeleted', state.group.name), lang));
+        sessionManager.clearUserState(userId);
+    } else if (trimmed === '2') {
+        await msg.reply(addNavigationFooter(t(lang, 'deleteCancelled'), lang));
+        sessionManager.clearUserState(userId);
+    } else {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 2), lang));
+    }
+}
+
+async function handleResetConfirmation(msg, response) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+    const state = sessionManager.getUserState(userId);
+
+    const trimmed = response.trim();
+
+    if (trimmed === '1') {
+        await updateGroupConfig(state.group.group_id, { current_page: 1 });
+        await clearKhatmaHistory(userId, state.group.group_id, false);
+        await reloadJobs();
+        await msg.reply(addNavigationFooter(t(lang, 'resetSuccess'), lang));
         sessionManager.clearUserState(userId);
     } else if (trimmed === '2') {
         await msg.reply(addNavigationFooter(t(lang, 'deleteCancelled'), lang));
@@ -824,6 +863,10 @@ async function showSubscriptionSettings(msg, subscription) {
 
     const schedules = JSON.parse(subscription.cron_schedules || '["0 18 * * *"]');
     const pagesPerSend = subscription.pages_per_send || 1;
+    const khatmaCount = await getKhatmaCount(userId, null, true);
+    const progressPercent = ((subscription.current_page / 604) * 100).toFixed(1);
+    const pagesRemaining = 604 - subscription.current_page;
+    const daysToComplete = Math.ceil(pagesRemaining / (pagesPerSend * schedules.length));
 
     let schedulesList = '';
     schedules.forEach((s, i) => {
@@ -833,7 +876,10 @@ async function showSubscriptionSettings(msg, subscription) {
     const statusText = subscription.is_active ? t(lang, 'statusActive') : t(lang, 'statusPaused');
 
     const configText = t(lang, 'mySubscription') +
-        t(lang, 'currentPage', subscription.current_page) +
+        '\n' + t(lang, 'progressHeader') + '\n' +
+        t(lang, 'progressPage', subscription.current_page, progressPercent) + '\n' +
+        t(lang, 'progressKhatmas', khatmaCount) + '\n' +
+        t(lang, 'progressEstimate', daysToComplete) + '\n\n' +
         t(lang, 'pagesPerSend', pagesPerSend) +
         t(lang, 'schedules', schedules.length) + schedulesList +
         t(lang, 'status', statusText) +
@@ -916,16 +962,21 @@ async function handleSubscriptionSettingsOption(msg, option) {
             await handleSubscriptionToggleStatus(msg);
             break;
         case '6':
+            state.step = 'confirm_reset';
+            sessionManager.setUserState(userId, state);
+            await msg.reply(addNavigationFooter(t(lang, 'confirmReset'), lang));
+            break;
+        case '7':
             state.step = 'confirm_unsubscribe';
             sessionManager.setUserState(userId, state);
             await msg.reply(addNavigationFooter(t(lang, 'confirmUnsubscribe'), lang));
             break;
-        case '7':
+        case '8':
             sessionManager.clearUserState(userId);
             await handleMenu(msg);
             break;
         default:
-            await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 7), lang));
+            await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 8), lang));
     }
 }
 
@@ -1073,8 +1124,29 @@ async function handleUnsubscribeConfirmation(msg, response) {
 
     if (trimmed === '1') {
         await deleteSubscription(userId);
+        await clearKhatmaHistory(userId, null, true);
         await reloadJobs();
         await msg.reply(addNavigationFooter(t(lang, 'unsubscribed'), lang));
+        sessionManager.clearUserState(userId);
+    } else if (trimmed === '2') {
+        await msg.reply(addNavigationFooter(t(lang, 'deleteCancelled'), lang));
+        sessionManager.clearUserState(userId);
+    } else {
+        await msg.reply(addNavigationFooter(t(lang, 'invalidOption', 2), lang));
+    }
+}
+
+async function handleSubscriptionResetConfirmation(msg, response) {
+    const userId = msg.from;
+    const lang = await getUserLang(userId);
+
+    const trimmed = response.trim();
+
+    if (trimmed === '1') {
+        await updateSubscription(userId, { current_page: 1 });
+        await clearKhatmaHistory(userId, null, true);
+        await reloadJobs();
+        await msg.reply(addNavigationFooter(t(lang, 'resetSuccess'), lang));
         sessionManager.clearUserState(userId);
     } else if (trimmed === '2') {
         await msg.reply(addNavigationFooter(t(lang, 'deleteCancelled'), lang));

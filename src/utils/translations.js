@@ -25,7 +25,7 @@ const translations = {
         currentPage: '📄 Current Page: *{0}*/604\n',
         schedules: '⏰ Schedules ({0}):\n',
         status: '🔔 Status: {0}\n\n',
-        whatToChange: '*What would you like to change?*\n\n1️⃣ Set page number\n2️⃣ Add schedule\n3️⃣ Remove schedule\n4️⃣ Set pages per send\n5️⃣ Toggle status (pause/resume)\n6️⃣ Delete group\n7️⃣ Back to groups\n\nReply with a number (1-7)',
+        whatToChange: '*What would you like to change?*\n\n1️⃣ Set page number\n2️⃣ Add schedule\n3️⃣ Remove schedule\n4️⃣ Set pages per send\n5️⃣ Toggle status (pause/resume)\n6️⃣ Reset progress 🔄\n7️⃣ Delete group\n8️⃣ Back to groups\n\nReply with a number (1-8)',
         sessionExpired: '⏱️ Session expired. Please type *menu* to start again.',
         setPage: '📄 *Set Page Number*\n\nEnter a page number between 1 and 604.\n\nType *menu* to cancel',
         addSchedule: '⏰ *Add Schedule*\n\nEnter the time in 24-hour format (HH:MM)\n\nExamples:\n• 09:00 (9 AM)\n• 18:30 (6:30 PM)\n• 23:45 (11:45 PM)\n\nType *menu* to cancel',
@@ -106,8 +106,17 @@ const translations = {
         subscribed: '✅ Your Daily Wird is now active!\n\nYou will receive Quran pages directly in this chat.',
         unsubscribed: '✅ Your Daily Wird has been stopped.\n\nYou can start it again anytime from the menu.',
         mySubscription: '📖 *My Daily Wird*\n\n',
-        subscriptionSettings: '*What would you like to change?*\n\n1️⃣ Set page number\n2️⃣ Add schedule\n3️⃣ Remove schedule\n4️⃣ Set pages per send\n5️⃣ Pause/Resume (temporary)\n6️⃣ Stop Daily Wird (delete)\n7️⃣ Back to menu\n\nReply with a number (1-7)',
-        confirmUnsubscribe: '⚠️ *Confirm Stop*\n\nAre you sure you want to stop your Daily Wird?\n\n1️⃣ Yes, stop\n2️⃣ No, cancel\n\nReply with number (1-2)'
+        subscriptionSettings: '*What would you like to change?*\n\n1️⃣ Set page number\n2️⃣ Add schedule\n3️⃣ Remove schedule\n4️⃣ Set pages per send\n5️⃣ Pause/Resume (temporary)\n6️⃣ Reset progress 🔄\n7️⃣ Stop Daily Wird (delete)\n8️⃣ Back to menu\n\nReply with a number (1-8)',
+        confirmUnsubscribe: '⚠️ *Confirm Stop*\n\nAre you sure you want to stop your Daily Wird?\n\n1️⃣ Yes, stop\n2️⃣ No, cancel\n\nReply with number (1-2)',
+        
+        // Progress & Khatma
+        progressHeader: '📊 *Progress*',
+        progressPage: '📄 Page: *{0}*/604 ({1}%)',
+        progressKhatmas: '🏆 Khatmas completed: *{0}*',
+        progressEstimate: '📅 Est. completion: ~{0} days',
+        confirmReset: '⚠️ *Confirm Reset*\n\nThis will:\n• Reset page to 1\n• Clear khatma history\n\nAre you sure?\n\n1️⃣ Yes, reset\n2️⃣ No, cancel\n\nReply with number (1-2)',
+        resetSuccess: '✅ Progress has been reset!\n\nPage set to 1, khatma history cleared.',
+        khatmaComplete: '🎉 *Congratulations!*\n\nYou have completed the Quran! 🏆\n\nThis is khatma #{0}.\n\nStarting again from page 1...'
     },
     fr: {
         selectLanguage: '🌍 *Sélectionnez Votre Langue*\n\nVeuillez choisir votre langue préférée:\n\n1️⃣ English (Anglais)\n2️⃣ Français\n3️⃣ العربية (Arabe)\n\nRépondez avec le numéro (1, 2 ou 3)',
@@ -135,7 +144,7 @@ const translations = {
         currentPage: '📄 Page Actuelle: *{0}*/604\n',
         schedules: '⏰ Horaires ({0}):\n',
         status: '🔔 Statut: {0}\n\n',
-        whatToChange: '*Que souhaitez-vous modifier?*\n\n1️⃣ Définir le numéro de page\n2️⃣ Ajouter un horaire\n3️⃣ Supprimer un horaire\n4️⃣ Définir pages par envoi\n5️⃣ Basculer le statut (pause/reprise)\n6️⃣ Supprimer le groupe\n7️⃣ Retour aux groupes\n\nRépondez avec un numéro (1-7)',
+        whatToChange: '*Que souhaitez-vous modifier?*\n\n1️⃣ Définir le numéro de page\n2️⃣ Ajouter un horaire\n3️⃣ Supprimer un horaire\n4️⃣ Définir pages par envoi\n5️⃣ Basculer le statut (pause/reprise)\n6️⃣ Réinitialiser le progrès 🔄\n7️⃣ Supprimer le groupe\n8️⃣ Retour aux groupes\n\nRépondez avec un numéro (1-8)',
         sessionExpired: '⏱️ Session expirée. Veuillez taper *menu* pour recommencer.',
         setPage: '📄 *Définir le Numéro de Page*\n\nEntrez un numéro de page entre 1 et 604.\n\nTapez *menu* pour annuler',
         addSchedule: '⏰ *Ajouter un Horaire*\n\nEntrez l\'heure au format 24h (HH:MM)\n\nExemples:\n• 09:00 (9h du matin)\n• 18:30 (18h30)\n• 23:45 (23h45)\n\nTapez *menu* pour annuler',
@@ -216,8 +225,17 @@ const translations = {
         subscribed: '✅ Votre Wird quotidien est maintenant actif!\n\nVous recevrez les pages du Coran directement dans cette conversation.',
         unsubscribed: '✅ Votre Wird quotidien a été arrêté.\n\nVous pouvez le reprendre à tout moment depuis le menu.',
         mySubscription: '📖 *Mon Wird Quotidien*\n\n',
-        subscriptionSettings: '*Que souhaitez-vous modifier?*\n\n1️⃣ Définir le numéro de page\n2️⃣ Ajouter un horaire\n3️⃣ Supprimer un horaire\n4️⃣ Définir pages par envoi\n5️⃣ Pause/Reprise (temporaire)\n6️⃣ Arrêter le Wird (supprimer)\n7️⃣ Retour au menu\n\nRépondez avec un numéro (1-7)',
-        confirmUnsubscribe: '⚠️ *Confirmer l\'arrêt*\n\nÊtes-vous sûr de vouloir arrêter votre Wird quotidien?\n\n1️⃣ Oui, arrêter\n2️⃣ Non, annuler\n\nRépondez avec le numéro (1-2)'
+        subscriptionSettings: '*Que souhaitez-vous modifier?*\n\n1️⃣ Définir le numéro de page\n2️⃣ Ajouter un horaire\n3️⃣ Supprimer un horaire\n4️⃣ Définir pages par envoi\n5️⃣ Pause/Reprise (temporaire)\n6️⃣ Réinitialiser le progrès 🔄\n7️⃣ Arrêter le Wird (supprimer)\n8️⃣ Retour au menu\n\nRépondez avec un numéro (1-8)',
+        confirmUnsubscribe: '⚠️ *Confirmer l\'arrêt*\n\nÊtes-vous sûr de vouloir arrêter votre Wird quotidien?\n\n1️⃣ Oui, arrêter\n2️⃣ Non, annuler\n\nRépondez avec le numéro (1-2)',
+        
+        // Progress & Khatma
+        progressHeader: '📊 *Progrès*',
+        progressPage: '📄 Page: *{0}*/604 ({1}%)',
+        progressKhatmas: '🏆 Khatmas complétées: *{0}*',
+        progressEstimate: '📅 Fin estimée: ~{0} jours',
+        confirmReset: '⚠️ *Confirmer la réinitialisation*\n\nCela va:\n• Remettre la page à 1\n• Effacer l\'historique des khatmas\n\nÊtes-vous sûr?\n\n1️⃣ Oui, réinitialiser\n2️⃣ Non, annuler\n\nRépondez avec le numéro (1-2)',
+        resetSuccess: '✅ Le progrès a été réinitialisé!\n\nPage remise à 1, historique des khatmas effacé.',
+        khatmaComplete: '🎉 *Félicitations!*\n\nVous avez terminé le Coran! 🏆\n\nC\'est la khatma #{0}.\n\nOn recommence à la page 1...'
     },
     ar: {
         selectLanguage: '🌍 *اختر لغتك*\n\nالرجاء اختيار لغتك المفضلة:\n\n1️⃣ English (الإنجليزية)\n2️⃣ Français (الفرنسية)\n3️⃣ العربية\n\nأجب بالرقم (1 أو 2 أو 3)',
@@ -245,7 +263,7 @@ const translations = {
         currentPage: '📄 الصفحة الحالية: *{0}*/604\n',
         schedules: '⏰ المواعيد ({0}):\n',
         status: '🔔 الحالة: {0}\n\n',
-        whatToChange: '*ماذا تريد أن تغير؟*\n\n1️⃣ تعيين رقم الصفحة\n2️⃣ إضافة موعد\n3️⃣ حذف موعد\n4️⃣ تعيين عدد الصفحات لكل إرسال\n5️⃣ تبديل الحالة (إيقاف/استئناف)\n6️⃣ حذف المجموعة\n7️⃣ العودة إلى المجموعات\n\nأجب برقم (1-7)',
+        whatToChange: '*ماذا تريد أن تغير؟*\n\n1️⃣ تعيين رقم الصفحة\n2️⃣ إضافة موعد\n3️⃣ حذف موعد\n4️⃣ تعيين عدد الصفحات لكل إرسال\n5️⃣ تبديل الحالة (إيقاف/استئناف)\n6️⃣ إعادة تعيين التقدم 🔄\n7️⃣ حذف المجموعة\n8️⃣ العودة إلى المجموعات\n\nأجب برقم (1-8)',
         sessionExpired: '⏱️ انتهت الجلسة. الرجاء كتابة *menu* للبدء من جديد.',
         setPage: '📄 *تعيين رقم الصفحة*\n\nأدخل رقم صفحة بين 1 و 604.\n\nاكتب *menu* للإلغاء',
         addSchedule: '⏰ *إضافة موعد*\n\nأدخل الوقت بصيغة 24 ساعة (HH:MM)\n\nأمثلة:\n• 09:00 (9 صباحاً)\n• 18:30 (6:30 مساءً)\n• 23:45 (11:45 مساءً)\n\nاكتب *menu* للإلغاء',
@@ -326,8 +344,17 @@ const translations = {
         subscribed: '✅ تم تفعيل وردك اليومي!\n\nستستلم صفحات القرآن مباشرة في هذه المحادثة.',
         unsubscribed: '✅ تم إيقاف وردك اليومي.\n\nيمكنك استئنافه في أي وقت من القائمة.',
         mySubscription: '📖 *وردي اليومي*\n\n',
-        subscriptionSettings: '*ماذا تريد أن تغير؟*\n\n1️⃣ تعيين رقم الصفحة\n2️⃣ إضافة موعد\n3️⃣ حذف موعد\n4️⃣ تعيين عدد الصفحات لكل إرسال\n5️⃣ إيقاف/استئناف مؤقت\n6️⃣ إلغاء الورد نهائياً (حذف)\n7️⃣ العودة للقائمة\n\nأجب برقم (1-7)',
-        confirmUnsubscribe: '⚠️ *تأكيد الإيقاف*\n\nهل أنت متأكد من إيقاف وردك اليومي؟\n\n1️⃣ نعم، إيقاف\n2️⃣ لا، إلغاء\n\nأجب برقم (1-2)'
+        subscriptionSettings: '*ماذا تريد أن تغير؟*\n\n1️⃣ تعيين رقم الصفحة\n2️⃣ إضافة موعد\n3️⃣ حذف موعد\n4️⃣ تعيين عدد الصفحات لكل إرسال\n5️⃣ إيقاف/استئناف مؤقت\n6️⃣ إعادة تعيين التقدم 🔄\n7️⃣ إلغاء الورد نهائياً (حذف)\n8️⃣ العودة للقائمة\n\nأجب برقم (1-8)',
+        confirmUnsubscribe: '⚠️ *تأكيد الإيقاف*\n\nهل أنت متأكد من إيقاف وردك اليومي؟\n\n1️⃣ نعم، إيقاف\n2️⃣ لا، إلغاء\n\nأجب برقم (1-2)',
+        
+        // Progress & Khatma
+        progressHeader: '📊 *التقدم*',
+        progressPage: '📄 الصفحة: *{0}*/604 ({1}%)',
+        progressKhatmas: '🏆 الختمات المكتملة: *{0}*',
+        progressEstimate: '📅 الإكمال المتوقع: ~{0} يوم',
+        confirmReset: '⚠️ *تأكيد إعادة التعيين*\n\nسيتم:\n• إعادة الصفحة إلى 1\n• مسح سجل الختمات\n\nهل أنت متأكد؟\n\n1️⃣ نعم، إعادة تعيين\n2️⃣ لا، إلغاء\n\nأجب برقم (1-2)',
+        resetSuccess: '✅ تم إعادة تعيين التقدم!\n\nالصفحة الآن 1، تم مسح سجل الختمات.',
+        khatmaComplete: '🎉 *مبروك!*\n\nلقد أتممت القرآن الكريم! 🏆\n\nهذه الختمة رقم #{0}.\n\nنبدأ من جديد من الصفحة 1...'
     }
 };
 

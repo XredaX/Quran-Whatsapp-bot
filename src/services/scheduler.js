@@ -2,7 +2,8 @@ const schedule = require('node-schedule');
 const { MessageMedia } = require('whatsapp-web.js');
 const path = require('path');
 const fs = require('fs');
-const { getAllActiveGroups, updateGroupConfig, getAllActiveSubscriptions, updateSubscription } = require('../config/database');
+const { getAllActiveGroups, updateGroupConfig, getAllActiveSubscriptions, updateSubscription, recordKhatma, getKhatmaCount, getGroup } = require('../config/database');
+const { t } = require('../utils/translations');
 const { getRandomQuote } = require('../utils/quotes');
 
 const IMAGES_DIR = 'quran-images';
@@ -117,6 +118,21 @@ async function sendQuranImage(group) {
 
         console.log(`✅ Completed sending ${pagesSent} page(s) to ${group.name} at ${new Date().toLocaleString()}`);
 
+        // Check if khatma completed
+        if (currentPage > maxPage) {
+            // Record khatma
+            await recordKhatma(group.user_id, group.group_id, false, group.created_at);
+            const khatmaCount = await getKhatmaCount(group.user_id, group.group_id, false);
+            
+            // Send congratulation message
+            const congratsMsg = `🎉 *Congratulations!*\n\nYou have completed the Quran! 🏆\n\nThis is khatma #${khatmaCount}.\n\nStarting again from page 1...`;
+            await client.sendMessage(group.group_id, congratsMsg);
+            
+            // Reset to page 1
+            currentPage = 1;
+            console.log(`🎉 Khatma #${khatmaCount} completed for ${group.name}! Resetting to page 1.`);
+        }
+
         // Update to the next page
         await updateGroupConfig(group.group_id, { current_page: currentPage });
         console.log(`Updated ${group.name} to page ${currentPage}`);
@@ -195,6 +211,21 @@ async function sendQuranToUser(subscription) {
         }
 
         console.log(`✅ Completed sending ${pagesSent} page(s) to user ${subscription.user_id} at ${new Date().toLocaleString()}`);
+
+        // Check if khatma completed
+        if (currentPage > maxPage) {
+            // Record khatma
+            await recordKhatma(subscription.user_id, null, true, subscription.created_at);
+            const khatmaCount = await getKhatmaCount(subscription.user_id, null, true);
+            
+            // Send congratulation message
+            const congratsMsg = `🎉 *Congratulations!*\n\nYou have completed the Quran! 🏆\n\nThis is khatma #${khatmaCount}.\n\nStarting again from page 1...`;
+            await client.sendMessage(subscription.user_id, congratsMsg);
+            
+            // Reset to page 1
+            currentPage = 1;
+            console.log(`🎉 Khatma #${khatmaCount} completed for user ${subscription.user_id}! Resetting to page 1.`);
+        }
 
         await updateSubscription(subscription.user_id, { current_page: currentPage });
         console.log(`Updated subscription for user ${subscription.user_id} to page ${currentPage}`);
