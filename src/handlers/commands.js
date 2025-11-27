@@ -371,7 +371,7 @@ async function handleSettings(msg, groupId) {
     await getOrCreateUser(userId);
 
     const group = await getGroup(groupId);
-    if (!group) {
+    if (!group || group.user_id !== userId) {
         await msg.reply(addNavigationFooter(t(lang, 'error'), lang));
         sessionManager.clearUserState(userId);
         return;
@@ -494,6 +494,12 @@ async function handlePageInput(msg, pageNumber) {
         return;
     }
 
+    if (!state || !state.group || state.group.user_id !== userId) {
+        await msg.reply(addNavigationFooter(t(lang, 'sessionExpired'), lang));
+        sessionManager.clearUserState(userId);
+        return;
+    }
+
     const page = parseInt(pageNumber);
 
     if (isNaN(page) || page < 1 || page > 604) {
@@ -548,7 +554,7 @@ async function handleAddScheduleInput(msg, schedule) {
             return;
         }
 
-        if (!state || !state.group) {
+        if (!state || !state.group || state.group.user_id !== userId) {
             console.error('State or group missing for user:', userId);
             await msg.reply(addNavigationFooter(t(lang, 'sessionExpired'), lang));
             sessionManager.clearUserState(userId);
@@ -605,6 +611,12 @@ async function handleRemoveScheduleSelection(msg, selection) {
         return;
     }
 
+    if (!state || !state.group || state.group.user_id !== userId) {
+        await msg.reply(addNavigationFooter(t(lang, 'sessionExpired'), lang));
+        sessionManager.clearUserState(userId);
+        return;
+    }
+
     const scheduleIndex = parseInt(selection) - 1;
     const schedules = JSON.parse(state.group.cron_schedules || '["0 18 * * *"]');
 
@@ -626,6 +638,12 @@ async function handleToggleStatus(msg) {
     const lang = await getUserLang(userId);
     const state = sessionManager.getUserState(userId);
 
+    if (!state || !state.group || state.group.user_id !== userId) {
+        await msg.reply(addNavigationFooter(t(lang, 'sessionExpired'), lang));
+        sessionManager.clearUserState(userId);
+        return;
+    }
+
     const newStatus = !state.group.is_active;
     await updateGroupConfig(state.group.group_id, { is_active: newStatus });
     await reloadJobs();
@@ -644,6 +662,12 @@ async function handlePagesPerSendInput(msg, pagesCount) {
     if (lowerInput === 'menu' || lowerInput === 'cancel' || lowerInput === 'back') {
         sessionManager.clearUserState(userId);
         await handleSettings(msg, state.group.group_id);
+        return;
+    }
+
+    if (!state || !state.group || state.group.user_id !== userId) {
+        await msg.reply(addNavigationFooter(t(lang, 'sessionExpired'), lang));
+        sessionManager.clearUserState(userId);
         return;
     }
 
@@ -686,6 +710,12 @@ async function handleDeleteConfirmation(msg, response) {
     const lang = await getUserLang(userId);
     const state = sessionManager.getUserState(userId);
 
+    if (!state || !state.group || state.group.user_id !== userId) {
+        await msg.reply(addNavigationFooter(t(lang, 'sessionExpired'), lang));
+        sessionManager.clearUserState(userId);
+        return;
+    }
+
     const trimmed = response.trim();
 
     if (trimmed === '1') {
@@ -706,6 +736,12 @@ async function handleResetConfirmation(msg, response) {
     const userId = msg.from;
     const lang = await getUserLang(userId);
     const state = sessionManager.getUserState(userId);
+
+    if (!state || !state.group || state.group.user_id !== userId) {
+        await msg.reply(addNavigationFooter(t(lang, 'sessionExpired'), lang));
+        sessionManager.clearUserState(userId);
+        return;
+    }
 
     const trimmed = response.trim();
 
@@ -816,12 +852,17 @@ async function handleEditConfirmation(msg, input) {
         const { groupId, field, newValue } = state.editData;
 
         try {
+            const group = await getGroup(groupId);
+            if (!group || group.user_id !== userId) {
+                await msg.reply(addNavigationFooter(t(lang, 'error'), lang));
+                sessionManager.clearUserState(userId);
+                return;
+            }
+
             const update = {};
             update[field] = newValue;
             await updateGroupConfig(groupId, update);
             await reloadJobs();
-
-            const group = await getGroup(groupId);
             
             const updateKeyMap = {
                 'current_page': 'pageUpdated',
