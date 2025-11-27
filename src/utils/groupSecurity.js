@@ -1,27 +1,13 @@
 async function getUserAccessibleGroups(client, userId) {
     try {
+        const { getEffectiveUserId } = require('./phoneResolver');
+        
+        // Get the effective userId (uses stored phone if available)
+        const effectiveUserId = await getEffectiveUserId(userId);
+        const userPhone = effectiveUserId.split('@')[0];
+        
         const chats = await client.getChats();
         const allGroups = chats.filter(chat => chat.isGroup);
-        
-        console.log(`Found ${allGroups.length} total groups`);
-        
-        // Get the actual phone number from the contact
-        let userPhone = userId.split('@')[0];
-        
-        // If userId is @lid format, try to get the real number from contact
-        if (userId.includes('@lid')) {
-            try {
-                const contact = await client.getContactById(userId);
-                if (contact && contact.number) {
-                    userPhone = contact.number;
-                    console.log(`Resolved @lid to phone: ${userPhone}`);
-                }
-            } catch (e) {
-                console.log(`Could not resolve @lid contact, using raw: ${userPhone}`);
-            }
-        }
-        
-        console.log(`Looking for user phone: ${userPhone}`);
         
         const userGroups = [];
         
@@ -31,20 +17,17 @@ async function getUserAccessibleGroups(client, userId) {
                 const fullGroup = await client.getChatById(group.id._serialized);
                 
                 if (!fullGroup.participants || fullGroup.participants.length === 0) {
-                    console.log(`Group ${group.name} has no participants loaded, skipping`);
                     continue;
                 }
                 
                 // Get all participant phone numbers
                 const participantPhones = fullGroup.participants.map(p => p.id._serialized.split('@')[0]);
                 
-                // Check if user's phone is in participants (try multiple matching strategies)
+                // Check if user's phone is in participants
                 const isMatch = participantPhones.some(phone => 
                     phone === userPhone ||
                     phone.endsWith(userPhone) ||
-                    userPhone.endsWith(phone) ||
-                    phone.includes(userPhone) ||
-                    userPhone.includes(phone)
+                    userPhone.endsWith(phone)
                 );
                 
                 if (isMatch) {
@@ -55,16 +38,12 @@ async function getUserAccessibleGroups(client, userId) {
                         description: fullGroup.description || '',
                         createdAt: fullGroup.createdAt || null
                     });
-                    console.log(`✓ User is member of: ${fullGroup.name}`);
-                } else {
-                    console.log(`✗ User not in: ${fullGroup.name} (participants: ${participantPhones.slice(0, 3).join(', ')}...)`);
                 }
             } catch (error) {
                 console.error(`Error checking group ${group.name}:`, error);
             }
         }
         
-        console.log(`User has access to ${userGroups.length} groups`);
         return userGroups;
     } catch (error) {
         console.error('Error getting user accessible groups:', error);

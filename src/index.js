@@ -70,6 +70,9 @@ client.on('message', async (msg) => {
     // Ignore group messages
     if (chat.isGroup) return;
 
+    // Note: @lid (linked device) IDs are handled by phoneResolver utility
+    // No need to resolve here - it's done when needed
+
     // Use session manager to queue messages per user
     await sessionManager.handleMessage(msg, client, handleMessage);
 });

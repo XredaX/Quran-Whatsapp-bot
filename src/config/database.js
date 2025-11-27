@@ -11,9 +11,15 @@ async function initDatabase() {
         await client.query(`
             CREATE TABLE IF NOT EXISTS users (
                 whatsapp_id VARCHAR(255) PRIMARY KEY,
+                phone_number VARCHAR(20),
                 language VARCHAR(10) DEFAULT 'en',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        `);
+        
+        // Add phone_number column if it doesn't exist (migration)
+        await client.query(`
+            ALTER TABLE users ADD COLUMN IF NOT EXISTS phone_number VARCHAR(20)
         `);
 
         await client.query(`
@@ -159,6 +165,21 @@ async function updateUserLanguage(whatsappId, language) {
     );
 }
 
+async function updateUserPhone(whatsappId, phoneNumber) {
+    await pool.query(
+        'UPDATE users SET phone_number = $1 WHERE whatsapp_id = $2',
+        [phoneNumber, whatsappId]
+    );
+}
+
+async function getUserPhone(whatsappId) {
+    const result = await pool.query(
+        'SELECT phone_number FROM users WHERE whatsapp_id = $1',
+        [whatsappId]
+    );
+    return result.rows[0]?.phone_number;
+}
+
 // Subscription functions for private chat
 async function getSubscription(userId) {
     const result = await pool.query(
@@ -281,6 +302,8 @@ module.exports = {
     getOrCreateUser,
     getUser,
     updateUserLanguage,
+    updateUserPhone,
+    getUserPhone,
     getUserGroups,
     linkGroup,
     getAllActiveGroups,

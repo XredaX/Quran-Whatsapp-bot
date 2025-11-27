@@ -193,6 +193,12 @@ async function handleLink(msg, client) {
     const lang = await getUserLang(userId);
     await getOrCreateUser(userId);
 
+    // If @lid format, detect phone number from groups
+    if (userId.includes('@lid')) {
+        const { detectAndStorePhoneNumber } = require('../utils/phoneResolver');
+        await detectAndStorePhoneNumber(client, userId);
+    }
+
     const userGroups = await getUserAccessibleGroups(client, userId);
 
     if (userGroups.length === 0) {
