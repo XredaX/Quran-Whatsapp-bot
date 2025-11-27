@@ -50,11 +50,27 @@ client.on('ready', async () => {
 });
 
 client.on('message', async (msg) => {
+    // Ignore messages from the bot itself
+    if (msg.fromMe) return;
+
+    // Ignore non-chat messages (status, broadcast, etc.)
+    if (msg.isStatus) return;
+    if (msg.broadcast) return;
+
+    // Ignore system/notification messages
+    if (msg.type !== 'chat' && msg.type !== 'image' && msg.type !== 'video' && msg.type !== 'audio' && msg.type !== 'document' && msg.type !== 'sticker') {
+        return;
+    }
+
+    // Ignore empty messages
+    if (!msg.body || msg.body.trim() === '') return;
+
     const chat = await msg.getChat();
+    
+    // Ignore group messages
     if (chat.isGroup) return;
 
     // Use session manager to queue messages per user
-    // This prevents race conditions and ensures sequential processing
     await sessionManager.handleMessage(msg, client, handleMessage);
 });
 
