@@ -2,7 +2,7 @@ const translations = {
     en: {
         selectLanguage: '🌍 *Select Your Language*\n\nPlease choose your preferred language:\n\n1️⃣ English\n2️⃣ Français (French)\n3️⃣ العربية (Arabic)\n\nReply with the number (1, 2, or 3)',
         languageSet: '✅ Language has been set successfully!\n\nYou can change it anytime by typing *!language*',
-        menu: '📖 *Quran Bot Menu*\n\nWhat would you like to do?\n\n1️⃣ Link a new group\n2️⃣ View my groups\n3️⃣ Subscribe (private)\n4️⃣ Help\n5️⃣ Change language\n\nReply with a number (1-5)',
+        menu: '📖 *Quran Bot Menu*\n\nWhat would you like to do?\n\n1️⃣ Link a new group\n2️⃣ View my groups\n3️⃣ Daily Wird (private)\n4️⃣ Help\n5️⃣ Change language\n\nReply with a number (1-5)',
         help: '📚 *How to Use Quran Bot*\n\n*Commands:*\n• Type *menu* or *help* to see this menu\n• Type *!language* to change language\n\n*Steps:*\n1. Link your WhatsApp groups OR subscribe privately\n2. Configure schedules\n3. Bot will send Quran pages automatically\n\n*Features:*\n• Multiple schedules per group/subscription\n• Auto page increment\n• Pause/resume anytime\n• Private or group delivery',
         invalidOption: '❌ Invalid option. Please reply with a number between 1 and {0}.',
         selectGroupToLink: '🔗 *Link a Group*\n\nYour WhatsApp Groups ({0}):\n',
@@ -98,20 +98,20 @@ const translations = {
         field_schedule: 'Schedule',
         field_is_active: 'Status',
         
-        // Private subscription
-        subscribePrompt: '📖 *Private Subscription*\n\nReceive daily Quran pages directly in this chat!\n\n',
-        alreadySubscribed: '✅ You are already subscribed!\n\nManage your subscription below:',
-        notSubscribed: 'You are not subscribed yet.\n\n1️⃣ Subscribe now\n2️⃣ Back to menu\n\nReply with a number (1-2)',
-        subscribed: '✅ You are now subscribed!\n\nYou will receive Quran pages directly in this chat.',
-        unsubscribed: '✅ You have been unsubscribed.\n\nYou can subscribe again anytime from the menu.',
-        mySubscription: '📖 *My Subscription*\n\n',
-        subscriptionSettings: '*What would you like to change?*\n\n1️⃣ Set page number\n2️⃣ Add schedule\n3️⃣ Remove schedule\n4️⃣ Set pages per send\n5️⃣ Toggle status (pause/resume)\n6️⃣ Unsubscribe\n7️⃣ Back to menu\n\nReply with a number (1-7)',
-        confirmUnsubscribe: '⚠️ *Confirm Unsubscribe*\n\nAre you sure you want to unsubscribe?\n\n1️⃣ Yes, unsubscribe\n2️⃣ No, cancel\n\nReply with number (1-2)'
+        // Daily Wird (private)
+        subscribePrompt: '📖 *Daily Wird*\n\nReceive your daily Quran pages directly in this chat!\n\n',
+        alreadySubscribed: '✅ Your Daily Wird is already active!\n\nManage your wird below:',
+        notSubscribed: 'You don\'t have a Daily Wird yet.\n\n1️⃣ Start my Daily Wird\n2️⃣ Back to menu\n\nReply with a number (1-2)',
+        subscribed: '✅ Your Daily Wird is now active!\n\nYou will receive Quran pages directly in this chat.',
+        unsubscribed: '✅ Your Daily Wird has been stopped.\n\nYou can start it again anytime from the menu.',
+        mySubscription: '📖 *My Daily Wird*\n\n',
+        subscriptionSettings: '*What would you like to change?*\n\n1️⃣ Set page number\n2️⃣ Add schedule\n3️⃣ Remove schedule\n4️⃣ Set pages per send\n5️⃣ Toggle status (pause/resume)\n6️⃣ Stop Daily Wird\n7️⃣ Back to menu\n\nReply with a number (1-7)',
+        confirmUnsubscribe: '⚠️ *Confirm Stop*\n\nAre you sure you want to stop your Daily Wird?\n\n1️⃣ Yes, stop\n2️⃣ No, cancel\n\nReply with number (1-2)'
     },
     fr: {
         selectLanguage: '🌍 *Sélectionnez Votre Langue*\n\nVeuillez choisir votre langue préférée:\n\n1️⃣ English (Anglais)\n2️⃣ Français\n3️⃣ العربية (Arabe)\n\nRépondez avec le numéro (1, 2 ou 3)',
         languageSet: '✅ La langue a été définie avec succès!\n\nVous pouvez la changer à tout moment en tapant *!language*',
-        menu: '📖 *Menu du Bot Coran*\n\nQue souhaitez-vous faire?\n\n1️⃣ Lier un nouveau groupe\n2️⃣ Voir mes groupes\n3️⃣ S\'abonner (privé)\n4️⃣ Aide\n5️⃣ Changer de langue\n\nRépondez avec un numéro (1-5)',
+        menu: '📖 *Menu du Bot Coran*\n\nQue souhaitez-vous faire?\n\n1️⃣ Lier un nouveau groupe\n2️⃣ Voir mes groupes\n3️⃣ Wird quotidien (privé)\n4️⃣ Aide\n5️⃣ Changer de langue\n\nRépondez avec un numéro (1-5)',
         help: '📚 *Comment Utiliser le Bot Coran*\n\n*Commandes:*\n• Tapez *menu* ou *help* pour voir ce menu\n• Tapez *!language* pour changer de langue\n\n*Étapes:*\n1. Liez vos groupes WhatsApp\n2. Configurez les horaires pour chaque groupe\n3. Le bot enverra les pages du Coran automatiquement\n\n*Fonctionnalités:*\n• Plusieurs horaires par groupe\n• Incrémentation automatique des pages\n• Pause/reprise à tout moment',
         invalidOption: '❌ Option invalide. Veuillez répondre avec un numéro entre 1 et {0}.',
         selectGroupToLink: '🔗 *Lier un Groupe*\n\nVos Groupes WhatsApp ({0}):\n',
@@ -207,20 +207,20 @@ const translations = {
         field_schedule: 'Horaire',
         field_is_active: 'Statut',
         
-        // Private subscription
-        subscribePrompt: '📖 *Abonnement Privé*\n\nRecevez les pages du Coran directement dans cette conversation!\n\n',
-        alreadySubscribed: '✅ Vous êtes déjà abonné!\n\nGérez votre abonnement ci-dessous:',
-        notSubscribed: 'Vous n\'êtes pas encore abonné.\n\n1️⃣ S\'abonner maintenant\n2️⃣ Retour au menu\n\nRépondez avec un numéro (1-2)',
-        subscribed: '✅ Vous êtes maintenant abonné!\n\nVous recevrez les pages du Coran directement dans cette conversation.',
-        unsubscribed: '✅ Vous avez été désabonné.\n\nVous pouvez vous réabonner à tout moment depuis le menu.',
-        mySubscription: '📖 *Mon Abonnement*\n\n',
-        subscriptionSettings: '*Que souhaitez-vous modifier?*\n\n1️⃣ Définir le numéro de page\n2️⃣ Ajouter un horaire\n3️⃣ Supprimer un horaire\n4️⃣ Définir pages par envoi\n5️⃣ Basculer le statut (pause/reprise)\n6️⃣ Se désabonner\n7️⃣ Retour au menu\n\nRépondez avec un numéro (1-7)',
-        confirmUnsubscribe: '⚠️ *Confirmer le Désabonnement*\n\nÊtes-vous sûr de vouloir vous désabonner?\n\n1️⃣ Oui, se désabonner\n2️⃣ Non, annuler\n\nRépondez avec le numéro (1-2)'
+        // Wird quotidien (privé)
+        subscribePrompt: '📖 *Wird Quotidien*\n\nRecevez vos pages du Coran directement dans cette conversation!\n\n',
+        alreadySubscribed: '✅ Votre Wird quotidien est déjà actif!\n\nGérez votre wird ci-dessous:',
+        notSubscribed: 'Vous n\'avez pas encore de Wird quotidien.\n\n1️⃣ Commencer mon Wird quotidien\n2️⃣ Retour au menu\n\nRépondez avec un numéro (1-2)',
+        subscribed: '✅ Votre Wird quotidien est maintenant actif!\n\nVous recevrez les pages du Coran directement dans cette conversation.',
+        unsubscribed: '✅ Votre Wird quotidien a été arrêté.\n\nVous pouvez le reprendre à tout moment depuis le menu.',
+        mySubscription: '📖 *Mon Wird Quotidien*\n\n',
+        subscriptionSettings: '*Que souhaitez-vous modifier?*\n\n1️⃣ Définir le numéro de page\n2️⃣ Ajouter un horaire\n3️⃣ Supprimer un horaire\n4️⃣ Définir pages par envoi\n5️⃣ Basculer le statut (pause/reprise)\n6️⃣ Arrêter le Wird quotidien\n7️⃣ Retour au menu\n\nRépondez avec un numéro (1-7)',
+        confirmUnsubscribe: '⚠️ *Confirmer l\'arrêt*\n\nÊtes-vous sûr de vouloir arrêter votre Wird quotidien?\n\n1️⃣ Oui, arrêter\n2️⃣ Non, annuler\n\nRépondez avec le numéro (1-2)'
     },
     ar: {
         selectLanguage: '🌍 *اختر لغتك*\n\nالرجاء اختيار لغتك المفضلة:\n\n1️⃣ English (الإنجليزية)\n2️⃣ Français (الفرنسية)\n3️⃣ العربية\n\nأجب بالرقم (1 أو 2 أو 3)',
         languageSet: '✅ تم تعيين اللغة بنجاح!\n\nيمكنك تغييرها في أي وقت بكتابة *!language*',
-        menu: '📖 *قائمة بوت القرآن*\n\nماذا تريد أن تفعل؟\n\n1️⃣ ربط مجموعة جديدة\n2️⃣ عرض مجموعاتي\n3️⃣ الاشتراك (خاص)\n4️⃣ المساعدة\n5️⃣ تغيير اللغة\n\nأجب برقم (1-5)',
+        menu: '📖 *قائمة بوت القرآن*\n\nماذا تريد أن تفعل؟\n\n1️⃣ ربط مجموعة جديدة\n2️⃣ عرض مجموعاتي\n3️⃣ وردي اليومي (خاص)\n4️⃣ المساعدة\n5️⃣ تغيير اللغة\n\nأجب برقم (1-5)',
         help: '📚 *كيفية استخدام بوت القرآن*\n\n*الأوامر:*\n• اكتب *menu* أو *help* لرؤية هذه القائمة\n• اكتب *!language* لتغيير اللغة\n\n*الخطوات:*\n1. اربط مجموعات الواتساب الخاصة بك\n2. قم بتكوين المواعيد لكل مجموعة\n3. سيرسل البوت صفحات القرآن تلقائياً\n\n*المميزات:*\n• مواعيد متعددة لكل مجموعة\n• زيادة تلقائية للصفحات\n• إيقاف/استئناف في أي وقت',
         invalidOption: '❌ خيار غير صالح. الرجاء الرد برقم بين 1 و {0}.',
         selectGroupToLink: '🔗 *ربط مجموعة*\n\nمجموعات الواتساب الخاصة بك ({0}):\n',
@@ -316,15 +316,15 @@ const translations = {
         field_schedule: 'الموعد',
         field_is_active: 'الحالة',
         
-        // Private subscription
-        subscribePrompt: '📖 *الاشتراك الخاص*\n\nاستلم صفحات القرآن مباشرة في هذه المحادثة!\n\n',
-        alreadySubscribed: '✅ أنت مشترك بالفعل!\n\nإدارة اشتراكك أدناه:',
-        notSubscribed: 'أنت غير مشترك بعد.\n\n1️⃣ اشترك الآن\n2️⃣ العودة للقائمة\n\nأجب برقم (1-2)',
-        subscribed: '✅ تم اشتراكك بنجاح!\n\nستستلم صفحات القرآن مباشرة في هذه المحادثة.',
-        unsubscribed: '✅ تم إلغاء اشتراكك.\n\nيمكنك الاشتراك مرة أخرى في أي وقت من القائمة.',
-        mySubscription: '📖 *اشتراكي*\n\n',
-        subscriptionSettings: '*ماذا تريد أن تغير؟*\n\n1️⃣ تعيين رقم الصفحة\n2️⃣ إضافة موعد\n3️⃣ حذف موعد\n4️⃣ تعيين عدد الصفحات لكل إرسال\n5️⃣ تبديل الحالة (إيقاف/استئناف)\n6️⃣ إلغاء الاشتراك\n7️⃣ العودة للقائمة\n\nأجب برقم (1-7)',
-        confirmUnsubscribe: '⚠️ *تأكيد إلغاء الاشتراك*\n\nهل أنت متأكد من إلغاء الاشتراك؟\n\n1️⃣ نعم، إلغاء الاشتراك\n2️⃣ لا، إلغاء\n\nأجب برقم (1-2)'
+        // وردي اليومي (خاص)
+        subscribePrompt: '📖 *وردي اليومي*\n\nاستلم صفحات القرآن مباشرة في هذه المحادثة!\n\n',
+        alreadySubscribed: '✅ وردك اليومي مفعّل بالفعل!\n\nإدارة وردك أدناه:',
+        notSubscribed: 'ليس لديك ورد يومي بعد.\n\n1️⃣ ابدأ وردي اليومي\n2️⃣ العودة للقائمة\n\nأجب برقم (1-2)',
+        subscribed: '✅ تم تفعيل وردك اليومي!\n\nستستلم صفحات القرآن مباشرة في هذه المحادثة.',
+        unsubscribed: '✅ تم إيقاف وردك اليومي.\n\nيمكنك استئنافه في أي وقت من القائمة.',
+        mySubscription: '📖 *وردي اليومي*\n\n',
+        subscriptionSettings: '*ماذا تريد أن تغير؟*\n\n1️⃣ تعيين رقم الصفحة\n2️⃣ إضافة موعد\n3️⃣ حذف موعد\n4️⃣ تعيين عدد الصفحات لكل إرسال\n5️⃣ تبديل الحالة (إيقاف/استئناف)\n6️⃣ إيقاف الورد اليومي\n7️⃣ العودة للقائمة\n\nأجب برقم (1-7)',
+        confirmUnsubscribe: '⚠️ *تأكيد الإيقاف*\n\nهل أنت متأكد من إيقاف وردك اليومي؟\n\n1️⃣ نعم، إيقاف\n2️⃣ لا، إلغاء\n\nأجب برقم (1-2)'
     }
 };
 

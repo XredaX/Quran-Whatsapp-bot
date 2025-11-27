@@ -3,7 +3,7 @@
   
   # Quran WhatsApp Bot
   
-  A multi-user WhatsApp bot that sends daily Quran pages to groups with multi-language support (English, French, Arabic).
+  A multi-user WhatsApp bot that sends daily Quran pages to groups or private chats with multi-language support (English, French, Arabic).
   
   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
   [![Node.js](https://img.shields.io/badge/Node.js-14+-green.svg)](https://nodejs.org/)
@@ -19,10 +19,11 @@
 
 ## Features
 
-- 📚 **Automatic Daily Quran Pages** - Send Quran page images to WhatsApp groups
+- 📚 **Automatic Daily Quran Pages** - Send Quran page images to groups or private chats
 - 🌍 **Multi-Language** - English, French, and Arabic interface
 - 👥 **Multi-User** - Each user manages their own groups independently
-- ⏰ **Flexible Scheduling** - Multiple daily sending times per group
+- 📱 **Daily Wird** - Receive Quran pages directly in your private chat
+- ⏰ **Flexible Scheduling** - Multiple daily sending times per group/subscription
 - 📄 **Batch Sending** - Send 1-50 pages per schedule
 - 🧙‍♂️ **Setup Wizard** - Guided configuration for new groups
 - ✅ **Confirmation System** - Preview changes before applying
@@ -75,8 +76,9 @@ Scan the QR code with WhatsApp, then send any message to the bot to begin.
 ### Menu Options
 1. **Link a new group** - Add a WhatsApp group
 2. **View my groups** - Manage existing groups
-3. **Help** - Usage instructions
-4. **Change language** - Switch language
+3. **Daily Wird (private)** - Receive Quran pages in your private chat
+4. **Help** - Usage instructions
+5. **Change language** - Switch language
 
 ## Database Schema
 
@@ -90,6 +92,13 @@ The bot auto-creates tables on first run:
 - `group_id` - WhatsApp group ID
 - `user_id` - Owner's WhatsApp ID
 - `name` - Group name
+- `current_page` - Next page to send (1-604)
+- `pages_per_send` - Pages to send each time (1-50)
+- `cron_schedules` - JSON array of schedules
+- `is_active` - Active or paused
+
+### `subscriptions` table (Daily Wird)
+- `user_id` - User's WhatsApp ID
 - `current_page` - Next page to send (1-604)
 - `pages_per_send` - Pages to send each time (1-50)
 - `cron_schedules` - JSON array of schedules
